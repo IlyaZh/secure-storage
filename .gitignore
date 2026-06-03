@@ -1,0 +1,44 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# .NET Build outputs
+**/bin/
+**/obj/
+
+# Published output
+**/publish/
+**/out/
+
+# Frontend dependencies and builds
+**/node_modules/
+**/dist/
+**/.cache/
+**/build/
+
+# Local configuration/secrets
+appsettings.local.json
+*.local
+.env
+.env.*.local
+
+# Docker
+.dockerignore
+# Do not ignore .dockerignore itself since it is tracked, but ignore container logs
+*.log
+
+# Custom ignores for this project
+**/appsettings.json
+**/appsettings.*.json
+!**/appsettings.example.json
+.env
+.env.*
+!.env.example
