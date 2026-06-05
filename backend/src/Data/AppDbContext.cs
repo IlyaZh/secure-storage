@@ -7,6 +7,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<User> Users { get; set; }
     public DbSet<Invite> Invites { get; set; }
+    public DbSet<Secret> Secrets { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

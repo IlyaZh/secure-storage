@@ -80,6 +80,15 @@ public class AuthController(
             }
         }
 
+        var claims = new List<Claim>{
+            new(ClaimTypes.Email, user!.Email),
+            new(ClaimTypes.NameIdentifier, user!.Id.ToString())
+        };
+        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignInAsync(
+    CookieAuthenticationDefaults.AuthenticationScheme,
+    new ClaimsPrincipal(claimsIdentity));
+
         return Redirect("/");
     }
 

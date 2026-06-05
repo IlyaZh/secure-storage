@@ -4,7 +4,7 @@ namespace SecureStorage.Domain.Entities;
 
 public class Secret
 {
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.CreateVersion7();
     public Guid OwnerId { get; set; }
     public string Comment { get; set; } = string.Empty;
     public bool IsOneTime { get; set; } = false;

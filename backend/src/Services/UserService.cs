@@ -31,7 +31,7 @@ public class UserService(
         invite.IsUsed = true;
         invite.Email = normalizedEmail;
 
-        var newUser = new User { Id = Guid.NewGuid(), Email = normalizedEmail, CreatedAt = DateTime.UtcNow };
+        var newUser = new User { Id = Guid.CreateVersion7(), Email = normalizedEmail, CreatedAt = DateTime.UtcNow };
 
         _dbContext.Users.Add(newUser);
         await _dbContext.SaveChangesAsync(ct);

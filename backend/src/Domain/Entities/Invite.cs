@@ -8,7 +8,7 @@ public class Invite
     /// <summary>
     /// Gets or sets the unique identifier of the invite.
     /// </summary>
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.CreateVersion7();
 
     /// <summary>
     /// Gets or sets the email address of the invitee.

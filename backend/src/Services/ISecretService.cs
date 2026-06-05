@@ -10,10 +10,10 @@ public interface ISecretService
     /// <summary>
     /// Create a new secret
     /// </summary>
-    Task<Guid> CreateSecretAsync(Guid ownerId,
+    Task<Guid> CreateSecretAsync(Stream contentStream,
+                                 Guid ownerId,
                                  string? comment,
                                  bool isOneTime,
-                                 byte[] encryptedData,
                                  byte[] iv,
                                  ContentType contentType,
                                  string? fileName,
