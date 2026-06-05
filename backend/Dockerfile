@@ -3,12 +3,12 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy csproj and restore dependencies
-COPY ["src/backend.csproj", "src/"]
-RUN dotnet restore "src/backend.csproj"
+COPY ["src/SecureStorage.csproj", "src/"]
+RUN dotnet restore "src/SecureStorage.csproj"
 
 # Copy the rest of the source code and build the application
 COPY src/ src/
-RUN dotnet publish "src/backend.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "src/SecureStorage.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # Stage 2: Production runtime environment
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
@@ -27,4 +27,4 @@ COPY --from=build /app/publish .
 # Expose port 8080 (ASP.NET Core 8.0/9.0 default port for non-root containers)
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "backend.dll"]
+ENTRYPOINT ["dotnet", "SecureStorage.dll"]
