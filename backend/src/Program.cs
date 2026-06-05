@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SecureStorage.Data;
+using SecureStorage.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,8 @@ if (string.IsNullOrEmpty(connectionString))
 }
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ISecretService, SecretService>();
 
 var app = builder.Build();
 

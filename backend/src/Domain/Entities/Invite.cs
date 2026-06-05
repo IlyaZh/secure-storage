@@ -13,7 +13,7 @@ public class Invite
     /// <summary>
     /// Gets or sets the email address of the invitee.
     /// </summary>
-    public string? Email { get; set; }
+    public string Email { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets whether the invite has been used.

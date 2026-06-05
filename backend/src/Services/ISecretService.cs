@@ -1,28 +1,45 @@
-using System.Net.Mime;
+using SecureStorage.Domain.Enums;
 
 namespace SecureStorage.Services;
 
+/// <summary>
+/// Interface for secret service
+/// </summary>
 public interface ISecretService
 {
-    Task<Guid> CreateSecretAsync(
-        Guid ownerId,
-        string? comment,
-        bool isOneTime,
-        byte[] encryptedData,
-        byte[] iv,
-        ContentType contentType,
-        string? fileName
-    );
+    /// <summary>
+    /// Create a new secret
+    /// </summary>
+    Task<Guid> CreateSecretAsync(Guid ownerId,
+                                 string? comment,
+                                 bool isOneTime,
+                                 byte[] encryptedData,
+                                 byte[] iv,
+                                 ContentType contentType,
+                                 string? fileName,
+                                 CancellationToken ct);
 
-    Task<SecretDto?> GetSecretAsync(Guid secretId);
+    /// <summary>
+    /// Get a secret by ID
+    /// </summary>
+    Task<SecretDto?> GetSecretAsync(Guid secretId, CancellationToken ct);
 
-    Task<List<SecretSummaryDto>> GetUserSecretsAsync(Guid ownerId);
+    /// <summary>
+    /// Get all secrets for a user
+    /// </summary>
+    Task<List<SecretSummaryDto>> GetUserSecretsAsync(Guid ownerId, CancellationToken ct);
 
-    Task BurnSecretAsync(Guid secretId, Guid ownerId);
+    /// <summary>
+    /// Burn a secret (mark as used)
+    /// </summary>
+    Task BurnSecretAsync(Guid secretId, Guid ownerId, CancellationToken ct);
 
 
 };
 
+/// <summary>
+/// DTO for a secret
+/// </summary>
 public record SecretDto(
     byte[] EncryptedData,
     byte[] IV,
@@ -31,6 +48,9 @@ public record SecretDto(
     bool IsOneTime
 );
 
+/// <summary>
+/// DTO for a secret summary
+/// </summary>
 public record SecretSummaryDto(
     Guid Id,
     string? Comment,
