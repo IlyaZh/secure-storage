@@ -9,10 +9,23 @@ public interface ISecretService
 {
     /// <summary>
     /// Create a new secret
+    /// 
+    /// Arguments:
+    /// - contentStream: The content of the secret
+    /// - ownerId: The ID of the user who created the secret
+    /// - comment: An optional comment for the secret
+    /// - isOneTime: Whether the secret can only be used once
+    /// - iv: The initialization vector for the secret
+    /// - contentType: The content type of the secret
+    /// - fileName: The file name of the secret
+    /// 
+    /// Returns:
+    /// - The ID of the created secret
+    /// 
     /// </summary>
     Task<Guid> CreateSecretAsync(Stream contentStream,
                                  Guid ownerId,
-                                 string? comment,
+                                 string comment,
                                  bool isOneTime,
                                  byte[] iv,
                                  ContentType contentType,
@@ -21,16 +34,35 @@ public interface ISecretService
 
     /// <summary>
     /// Get a secret by ID
+    /// 
+    /// Arguments:
+    /// - secretId: The ID of the secret to get
+    /// 
+    /// Returns:
+    /// - The secret if found
+    /// 
     /// </summary>
     Task<SecretDto?> GetSecretAsync(Guid secretId, CancellationToken ct);
 
     /// <summary>
     /// Get all secrets for a user
+    /// 
+    /// Arguments:
+    /// - ownerId: The ID of the user to get secrets for
+    /// 
+    /// Returns:
+    /// - The list of secrets for the user
+    /// 
     /// </summary>
-    Task<List<SecretSummaryDto>> GetUserSecretsAsync(Guid ownerId, CancellationToken ct);
+    Task<List<SecretSummaryDto>> GetUserSecretsAsync(Guid ownerId, Guid? lastSecretId, CancellationToken ct);
 
     /// <summary>
     /// Burn a secret (mark as used)
+    /// 
+    /// Arguments:
+    /// - secretId: The ID of the secret to burn
+    /// - ownerId: The ID of the user who owns the secret
+    /// 
     /// </summary>
     Task BurnSecretAsync(Guid secretId, Guid ownerId, CancellationToken ct);
 

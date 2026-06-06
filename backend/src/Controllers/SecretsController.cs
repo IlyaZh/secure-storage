@@ -21,6 +21,11 @@ public class SecretsController(ISecretService _secretService) : ControllerBase
         }
 
         var comment = Request.Headers["X-Secret-Comment"].ToString();
+        if (string.IsNullOrEmpty(comment))
+        {
+            return BadRequest("(Comment) Comment hasn't been found.");
+        }
+
         if (!bool.TryParse(Request.Headers["X-Secret-IsOneTime"], out var isOneTime))
         {
             isOneTime = false;
@@ -57,6 +62,17 @@ public class SecretsController(ISecretService _secretService) : ControllerBase
             return Unauthorized();
         }
 
+    }
+
+    [HttpGet("{secretId}")]
+    public async Task<IActionResult> GetSecret(Guid secretId, CancellationToken ct)
+    {
+        var secret = await _secretService.GetSecretAsync(secretId, ct);
+        if (secret == null)
+        {
+            return NotFound();
+        }
+        return Ok(secret);
     }
     // todo
 }
