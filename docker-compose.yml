@@ -6,12 +6,33 @@ services:
     ports:
       - "5001:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=host.docker.internal;Port=3306;Database=secret_share_db;Uid=root;Pwd=pass;
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ConnectionStrings__Database=Server=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Uid=${DB_USER};Pwd=${DB_PASSWORD};
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
+      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
+      - AppSettings__FrontendUrl=${FRONTEND_URL}
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+
+  mysql_db:
+    image: mysql:8.0
+    container_name: mysql_container
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    ports:
+      - "3306:3306"
+    # Хелсчек проверяет, что база не просто запустилась, а готова принимать соединения
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   frontend:
     image: nginx:alpine
     ports:
-      - "3000:80"
+      - "3005:80"
     volumes:
       - ./frontend:/usr/share/nginx/html

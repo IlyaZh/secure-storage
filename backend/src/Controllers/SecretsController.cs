@@ -12,6 +12,7 @@ namespace SecureStorage.Controllers;
 public class SecretsController(ISecretService _secretService) : ControllerBase
 {
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> CreateSecret(CancellationToken ct)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);

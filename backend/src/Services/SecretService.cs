@@ -128,7 +128,7 @@ public class SecretService(AppDbContext _dbContext) : ISecretService
     /// - The list of secrets for the user
     /// 
     /// </summary>
-    public async Task<List<SecretSummaryDto>> GetUserSecretsAsync(Guid ownerId, Guid? lastSecretId, CancellationToken ct)
+    public Task<List<SecretSummaryDto>> GetUserSecretsAsync(Guid ownerId, Guid? lastSecretId, CancellationToken ct)
     {
         throw new NotImplementedException();
     }

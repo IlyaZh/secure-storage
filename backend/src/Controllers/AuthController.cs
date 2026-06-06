@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using SecureStorage.Domain.Entities;
 using SecureStorage.Services;
 
 namespace SecureStorage.Controllers;
@@ -10,7 +12,8 @@ namespace SecureStorage.Controllers;
 [ApiController]
 [Route("api/auth")]
 public class AuthController(
-    IUserService _userService
+    IUserService _userService,
+    IOptions<AppSettings> _appSettings
 ) : ControllerBase
 {
     /// <summary>
@@ -86,10 +89,10 @@ public class AuthController(
         };
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         await HttpContext.SignInAsync(
-    CookieAuthenticationDefaults.AuthenticationScheme,
-    new ClaimsPrincipal(claimsIdentity));
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(claimsIdentity));
 
-        return Redirect("/");
+        return Redirect(_appSettings.Value.FrontendUrl);
     }
 
     /// <summary>
@@ -100,6 +103,6 @@ public class AuthController(
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return Redirect("/");
+        return Ok();
     }
 }
