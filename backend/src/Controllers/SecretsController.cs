@@ -75,5 +75,20 @@ public class SecretsController(ISecretService _secretService) : ControllerBase
         }
         return Ok(secret);
     }
-    // todo
+
+    [HttpGet("my")]
+    [Authorize]
+    public async Task<IActionResult> GetMySecrets([FromQuery] Guid? lastSecretId,
+                                                  CancellationToken ct)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
+        {
+            return Unauthorized();
+        }
+
+        var secrets = await _secretService.GetUserSecretsAsync(userId, lastSecretId, ct);
+
+        return Ok(secrets);
+    }
 }

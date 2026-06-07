@@ -18,6 +18,10 @@ public class SecretService(AppDbContext _dbContext) : ISecretService
     /// The time to live of the secret in hours
     /// </summary>
     private const double SecretTTLhHours = 48;
+    /// <summary>
+    /// The page size for secret summary pagination
+    /// </summary>
+    private const int PageSize = 20;
 
     /// <summary>
     /// Create a new secret
@@ -123,14 +127,33 @@ public class SecretService(AppDbContext _dbContext) : ISecretService
     /// 
     /// Arguments:
     /// - ownerId: The ID of the user to get secrets for
+    /// - lastSecretId: The ID of the last secret to get secrets for
+    /// - ct: The cancellation token
     /// 
     /// Returns:
     /// - The list of secrets for the user
     /// 
     /// </summary>
-    public Task<List<SecretSummaryDto>> GetUserSecretsAsync(Guid ownerId, Guid? lastSecretId, CancellationToken ct)
+    public async Task<List<SecretSummaryDto>> GetUserSecretsAsync(Guid ownerId, Guid? lastSecretId, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        var query = _dbContext.Secrets
+            .Where(s => s.OwnerId == ownerId && !s.IsBurned && s.ExpiresAt > DateTime.UtcNow);
+
+        if (lastSecretId.HasValue)
+        {
+            query = query.Where(s => s.Id < lastSecretId.Value);
+        }
+
+        return await query
+            .OrderByDescending(s => s.Id)
+            .Take(PageSize)
+            .Select(s => new SecretSummaryDto(
+                s.Id,
+                s.Comment,
+                s.IsOneTime,
+                s.CreatedAt
+            ))
+            .ToListAsync(ct);
     }
 
     /// <summary>
