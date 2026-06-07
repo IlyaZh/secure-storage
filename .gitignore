@@ -42,3 +42,6 @@ appsettings.local.json
 .env
 .env.*
 !.env.example
+
+# Local database data
+mysql_data/

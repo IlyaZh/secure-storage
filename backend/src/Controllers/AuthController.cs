@@ -25,7 +25,7 @@ public class AuthController(
     /// <returns>A challenge result that redirects the user to the Google authentication provider.</returns>
     [HttpGet("login")]
     public IActionResult Login(
-        [FromQuery] Guid? inviteCode
+        [FromQuery] string? inviteCode
     )
     {
         var properties = new AuthenticationProperties
@@ -33,13 +33,16 @@ public class AuthController(
             RedirectUri = Url.Action(nameof(Callback))
         };
 
-        if (inviteCode.HasValue)
+        if (!string.IsNullOrEmpty(inviteCode))
         {
-            properties.Items.Add("inviteCode", inviteCode.Value.ToString());
+            if (!Guid.TryParse(inviteCode, out var inviteCodeGuid) || inviteCodeGuid == Guid.Empty)
+            {
+                return Redirect($"{_appSettings.Value.FrontendUrl}/#/login?error=invite_invalid");
+            }
+            properties.Items.Add("inviteCode", inviteCodeGuid.ToString());
         }
 
         return Challenge(properties, GoogleDefaults.AuthenticationScheme);
-
     }
 
     /// <summary>
@@ -55,14 +58,14 @@ public class AuthController(
 
         if (!authenticateResult.Succeeded)
         {
-            return BadRequest("Authentication failed");
+            return Redirect($"{_appSettings.Value.FrontendUrl}/#/login?error=auth_failed");
         }
 
         var email = authenticateResult.Principal?.FindFirstValue(ClaimTypes.Email);
 
         if (string.IsNullOrEmpty(email))
         {
-            return BadRequest("Cannot get email from Google");
+            return Redirect($"{_appSettings.Value.FrontendUrl}/#/login?error=email_missing");
         }
 
         var user = await _userService.GetByEmailAsync(email, ct);
@@ -72,15 +75,17 @@ public class AuthController(
             if (string.IsNullOrEmpty(inviteCodeStr) || !Guid.TryParse(inviteCodeStr, out var inviteCode) || inviteCode == Guid.Empty)
             {
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied. Registration only by invites." });
+                return Redirect($"{_appSettings.Value.FrontendUrl}/#/auth-error?reason=no_account");
             }
 
             var registrationSuccess = await _userService.RegisterWithInviteAsync(email, inviteCode, ct);
             if (!registrationSuccess)
             {
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                return StatusCode(StatusCodes.Status403Forbidden, new { error = "Registration failed. The invite might be invalid or already used." });
+                return Redirect($"{_appSettings.Value.FrontendUrl}/#/register?error=invite_invalid");
             }
+
+            user = await _userService.GetByEmailAsync(email, ct);
         }
 
         var claims = new List<Claim>{

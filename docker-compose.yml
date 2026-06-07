@@ -24,6 +24,8 @@ services:
       MYSQL_DATABASE: ${DB_NAME}
     ports:
       - "3306:3306"
+    volumes:
+      - ./mysql_data:/var/lib/mysql
     # Хелсчек проверяет, что база не просто запустилась, а готова принимать соединения
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}" ]

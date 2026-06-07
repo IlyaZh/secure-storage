@@ -37,7 +37,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.CreatedAt).IsRequired();
 
             entity.HasIndex(e => e.Id).IsUnique();
-            entity.HasIndex(e => e.Email).IsUnique();
+            entity.HasIndex(e => e.Email);
 
         });
 

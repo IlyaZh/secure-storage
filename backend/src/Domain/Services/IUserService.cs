@@ -34,4 +34,9 @@ public interface IUserService
     /// 
     /// </summary>
     Task<bool> RegisterWithInviteAsync(string email, Guid inviteCode, CancellationToken ct);
+
+    /// <summary>
+    /// Create a new invite associated with a user
+    /// </summary>
+    Task<Invite> CreateInviteAsync(Guid issuedByUserId, CancellationToken ct);
 }

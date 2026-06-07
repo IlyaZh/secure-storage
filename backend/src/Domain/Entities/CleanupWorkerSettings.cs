@@ -8,10 +8,14 @@ namespace SecureStorage.Domain.Entities;
 /// </remarks>
 /// <param name="PeriodSeconds">Period in seconds to run cleanup worker</param>
 /// <param name="BatchSize">Batch size for cleanup worker</param>
-/// <param name="BatchDelayMilieconds">Delay between batches in milliseconds</param>
-public class CleanupWorkerSettings(int PeriodSeconds, int BatchSize = 1000, int? BatchDelayMilieconds = 1000)
+/// <param name="BatchDelayMilliseconds">Delay between batches in milliseconds</param>
+/// 
+public class CleanupWorkerSettings
 {
-    public TimeSpan Period { get; set; } = TimeSpan.FromSeconds(PeriodSeconds);
-    public int BatchSize { get; set; } = BatchSize;
-    public TimeSpan? BatchDelay { get; set; } = BatchDelayMilieconds.HasValue ? TimeSpan.FromMilliseconds(BatchDelayMilieconds.Value) : null;
-};
+    public int PeriodSeconds { get; set; } = 30;
+    public int BatchSize { get; set; } = 1000;
+    public int? BatchDelayMilliseconds { get; set; } = 1000;
+
+    public TimeSpan Period => TimeSpan.FromSeconds(PeriodSeconds);
+    public TimeSpan? BatchDelay => BatchDelayMilliseconds.HasValue ? TimeSpan.FromMilliseconds(BatchDelayMilliseconds.Value) : null;
+}

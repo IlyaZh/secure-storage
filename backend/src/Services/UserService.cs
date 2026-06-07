@@ -75,4 +75,23 @@ public class UserService(
             throw;
         }
     }
+
+    /// <summary>
+    /// Create a new invite associated with a user
+    /// </summary>
+    public async Task<Invite> CreateInviteAsync(Guid issuedByUserId, CancellationToken ct)
+    {
+        var invite = new Invite
+        {
+            Id = Guid.CreateVersion7(),
+            Email = string.Empty,
+            IsUsed = false,
+            IssuedByUserId = issuedByUserId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _dbContext.Invites.Add(invite);
+        await _dbContext.SaveChangesAsync(ct);
+        return invite;
+    }
 }
