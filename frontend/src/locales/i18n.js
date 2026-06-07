@@ -4,12 +4,17 @@ import { ru } from './ru.js';
 const translations = { en, ru };
 
 // Detect language
-let lang = 'en';
-const browserLang = navigator.language || navigator.userLanguage;
-if (browserLang) {
-  const shortLang = browserLang.split('-')[0].toLowerCase();
-  if (translations[shortLang]) {
-    lang = shortLang;
+let lang = localStorage.getItem('lang');
+if (!lang) {
+  const browserLang = navigator.language || navigator.userLanguage;
+  if (browserLang) {
+    const shortLang = browserLang.split('-')[0].toLowerCase();
+    if (translations[shortLang]) {
+      lang = shortLang;
+    }
+  }
+  if (!lang) {
+    lang = 'en';
   }
 }
 
@@ -23,4 +28,11 @@ export function t(key) {
 
 export function getLanguage() {
   return lang;
+}
+
+export function setLanguage(newLang) {
+  if (translations[newLang]) {
+    localStorage.setItem('lang', newLang);
+    window.location.reload();
+  }
 }

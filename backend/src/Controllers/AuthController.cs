@@ -122,7 +122,7 @@ public class AuthController(
     /// Returns the authentication status and details of the currently logged-in user.
     /// </summary>
     [HttpGet("me")]
-    public IActionResult GetCurrentUser()
+    public async Task<IActionResult> GetCurrentUser(CancellationToken ct)
     {
         if (User.Identity == null || !User.Identity.IsAuthenticated)
         {
@@ -130,13 +130,21 @@ public class AuthController(
         }
 
         var email = User.FindFirstValue(ClaimTypes.Email);
-        var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(idStr) || !Guid.TryParse(idStr, out Guid userId))
+        {
+            return Ok(new { isAuthenticated = false });
+        }
+
+        var usage = await _userService.GetStorageUsageAsync(userId, ct);
 
         return Ok(new
         {
             isAuthenticated = true,
             email,
-            id
+            id = idStr,
+            usedBytes = usage.UsedBytes,
+            quotaBytes = usage.QuotaBytes
         });
     }
 }

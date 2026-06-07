@@ -96,5 +96,6 @@ public record SecretSummaryDto(
     Guid Id,
     string? Comment,
     bool IsOneTime,
+    long Size,
     DateTime CreatedAt
 );

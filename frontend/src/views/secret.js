@@ -2,6 +2,7 @@ import { t } from '../locales/i18n.js';
 import { showToast } from '../utils/toast.js';
 import { decryptData, hexToBuf, base64ToArrayBuffer } from '../utils/crypto.js';
 import { apiFetch } from '../api.js';
+import { formatBytes } from '../utils/format.js';
 
 export async function renderViewSecret({ id, key }) {
   const appContainer = document.getElementById('app');
@@ -44,7 +45,7 @@ export async function renderViewSecret({ id, key }) {
         <div style="text-align:center; padding: 1.5rem;">
           <span style="font-size: 3rem; display:block; margin-bottom:1rem;">📁</span>
           <p style="font-weight:600; font-size:1.1rem; margin-bottom:0.5rem;">${escapeHtml(secretDto.fileName)}</p>
-          <p class="card-desc">${t('create.fileLabel')}: ${escapeHtml(secretDto.contentType)}</p>
+          <p class="card-desc">${t('create.fileLabel')}: ${escapeHtml(secretDto.contentType)} (${formatBytes(decryptedBytes.length)})</p>
           <button id="download-file-btn" class="btn btn-primary" style="margin-top:1rem;">${t('view.downloadBtn')}</button>
         </div>
       `;

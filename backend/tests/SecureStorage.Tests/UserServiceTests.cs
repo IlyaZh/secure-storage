@@ -280,4 +280,67 @@ public class UserServiceTests
         // Assert
         Assert.Equal(5, page2.Count);
     }
+
+    [Fact]
+    public async Task GetStorageUsageAsync_ShouldCalculateActiveSecretsSizeSum()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var userId = Guid.NewGuid();
+        var user = new User { Id = userId, Email = "test@example.com", CreatedAt = DateTime.UtcNow };
+        context.Users.Add(user);
+
+        // Active secret
+        context.Secrets.Add(new Secret
+        {
+            Id = Guid.NewGuid(),
+            OwnerId = userId,
+            Comment = "Active",
+            Size = 500,
+            IsBurned = false,
+            ExpiresAt = DateTime.UtcNow.AddHours(1),
+            ContentType = "text/plain",
+            FileName = "",
+            IV = new byte[0]
+        });
+
+        // Expired secret (should be ignored)
+        context.Secrets.Add(new Secret
+        {
+            Id = Guid.NewGuid(),
+            OwnerId = userId,
+            Comment = "Expired",
+            Size = 1000,
+            IsBurned = false,
+            ExpiresAt = DateTime.UtcNow.AddHours(-1),
+            ContentType = "text/plain",
+            FileName = "",
+            IV = new byte[0]
+        });
+
+        // Burned secret (should be ignored)
+        context.Secrets.Add(new Secret
+        {
+            Id = Guid.NewGuid(),
+            OwnerId = userId,
+            Comment = "Burned",
+            Size = 2000,
+            IsBurned = true,
+            ExpiresAt = DateTime.UtcNow.AddHours(1),
+            ContentType = "text/plain",
+            FileName = "",
+            IV = new byte[0]
+        });
+
+        await context.SaveChangesAsync();
+
+        var service = new UserService(context);
+
+        // Act
+        var result = await service.GetStorageUsageAsync(userId, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(500L, result.UsedBytes);
+        Assert.Equal(200L * 1024 * 1024, result.QuotaBytes);
+    }
 }

@@ -12,6 +12,7 @@ public class UserService(
     AppDbContext _dbContext
 ) : IUserService
 {
+    private const long QuotaBytes = 200L * 1024 * 1024;
     /// <summary>
     /// Get user by email
     /// 
@@ -139,5 +140,20 @@ public class UserService(
             .OrderByDescending(inv => inv.Id)
             .Take(20)
             .ToListAsync(ct);
+    }
+
+    /// <summary>
+    /// Get user storage usage statistics (used bytes and quota bytes)
+    /// </summary>
+    public async Task<UserStorageUsageDto> GetStorageUsageAsync(Guid userId, CancellationToken ct)
+    {
+        var query = _dbContext.Secrets
+            .Where(s => s.OwnerId == userId && !s.IsBurned && s.ExpiresAt > DateTime.UtcNow);
+
+        var usedBytes = await query.AnyAsync(ct)
+            ? await query.SumAsync(s => s.Size, ct)
+            : 0L;
+
+        return new UserStorageUsageDto(usedBytes, QuotaBytes);
     }
 }

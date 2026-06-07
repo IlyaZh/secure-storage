@@ -1,9 +1,14 @@
 import { t } from '../locales/i18n.js';
 import { showToast } from '../utils/toast.js';
-import { apiFetch, state } from '../api.js';
+import { apiFetch, state, checkAuth } from '../api.js';
 import { navigate } from '../router.js';
+import { formatBytes } from '../utils/format.js';
 
-export function renderDashboard() {
+export async function renderDashboard() {
+  try {
+    await checkAuth();
+  } catch (e) {}
+
   if (!state.currentUser.isAuthenticated) {
     showToast(t('toast.authWarning'), "warning");
     navigate('/login');
@@ -16,7 +21,14 @@ export function renderDashboard() {
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
         <div>
           <h2 class="card-title" style="margin-bottom: 0.5rem;">${t('dashboard.title')}</h2>
-          <p class="card-desc" style="margin-bottom: 0;">${t('dashboard.desc')}</p>
+          <p class="card-desc" style="margin-bottom: 0.5rem;">${t('dashboard.desc')}</p>
+          <div id="quota-container" style="font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;">
+            <span>${t('dashboard.quotaLabel')}:</span>
+            <span id="quota-value" style="font-weight: 600; color: var(--text-color);">...</span>
+            <div style="width: 120px; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; display: inline-block; margin-left: 0.25rem;">
+              <div id="quota-bar" style="width: 0%; height: 100%; background: var(--primary-color); transition: width 0.3s ease;"></div>
+            </div>
+          </div>
         </div>
         <a href="#/create" class="btn btn-primary" style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">${t('nav.create')}</a>
       </div>
@@ -27,13 +39,14 @@ export function renderDashboard() {
             <tr>
               <th>${t('dashboard.tableComment')}</th>
               <th>${t('dashboard.tableType')}</th>
+              <th>${t('dashboard.tableSize')}</th>
               <th>${t('dashboard.tableCreated')}</th>
               <th style="text-align: right;">${t('dashboard.tableActions')}</th>
             </tr>
           </thead>
           <tbody id="secrets-table-body">
             <tr id="table-loading-row">
-              <td colspan="4" style="text-align:center; padding: 2rem;">
+              <td colspan="5" style="text-align:center; padding: 2rem;">
                 <span style="font-size:2rem; display:inline-block; animation:spin 1s infinite linear;">🔄</span>
               </td>
             </tr>
@@ -85,9 +98,31 @@ export function renderDashboard() {
     </div>
   `;
 
+  updateQuotaUI();
   loadUserSecrets();
   setupInviteHandler();
   loadUserInvites();
+}
+
+function updateQuotaUI() {
+  const quotaVal = document.getElementById('quota-value');
+  const quotaBar = document.getElementById('quota-bar');
+  if (!quotaVal || !quotaBar) return;
+
+  const used = state.currentUser.usedBytes || 0;
+  const total = state.currentUser.quotaBytes || 209715200;
+  const percent = Math.min(100, Math.round((used / total) * 100));
+
+  quotaVal.innerText = `${formatBytes(used)} / ${formatBytes(total)} (${percent}%)`;
+  quotaBar.style.width = `${percent}%`;
+
+  if (percent > 85) {
+    quotaBar.style.background = 'var(--accent-color)';
+  } else if (percent > 60) {
+    quotaBar.style.background = '#fdcb6e';
+  } else {
+    quotaBar.style.background = 'var(--primary-color)';
+  }
 }
 
 function setupInviteHandler() {
@@ -283,7 +318,7 @@ async function loadUserSecrets(lastSecretId = null) {
     if (!lastSecretId && secrets.length === 0) {
       container.innerHTML = `
         <tr>
-          <td colspan="4" style="text-align:center; padding: 2rem; color: var(--text-muted);">
+          <td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-muted);">
             ${t('dashboard.emptyList')}
           </td>
         </tr>
@@ -300,6 +335,13 @@ async function loadUserSecrets(lastSecretId = null) {
 
     secrets.forEach(s => {
       const dateStr = new Date(s.createdAt).toLocaleString();
+      const lowerId = s.id.toLowerCase();
+      const upperId = s.id.toUpperCase();
+      const localKey = localStorage.getItem(`secret-key-${lowerId}`) || 
+                        localStorage.getItem(`secret-key-${s.id}`) || 
+                        localStorage.getItem(`secret-key-${upperId}`);
+      const secretLink = localKey ? `${window.location.origin}/#/secret/${s.id}:${localKey}` : '';
+
       const row = document.createElement('tr');
       row.id = `secret-item-${s.id}`;
       row.innerHTML = `
@@ -310,13 +352,28 @@ async function loadUserSecrets(lastSecretId = null) {
           <span class="secret-table-meta">${s.isOneTime ? t('dashboard.metaOnetime') : t('dashboard.metaMultitime')}</span>
         </td>
         <td>
+          <span class="secret-table-meta">${formatBytes(s.size)}</span>
+        </td>
+        <td>
           <span class="secret-table-meta">${dateStr}</span>
         </td>
-        <td style="text-align: right;">
+        <td style="text-align: right; white-space: nowrap;">
+          ${secretLink
+            ? `<button class="btn btn-secondary copy-secret-link-btn" data-link="${secretLink}" style="padding:0.4rem 0.8rem; font-size:0.8rem; margin-right:0.5rem;">${t('dashboard.copyLinkBtn')}</button>`
+            : `<button class="btn btn-secondary" disabled title="${t('dashboard.keyUnavailableTooltip')}" style="padding:0.4rem 0.8rem; font-size:0.8rem; margin-right:0.5rem; opacity:0.5; cursor:not-allowed;">${t('dashboard.copyLinkBtn')}</button>`}
           <button class="btn btn-danger burn-btn" data-id="${s.id}" style="padding:0.4rem 0.8rem; font-size:0.8rem;">${t('dashboard.deleteBtn')}</button>
         </td>
       `;
       container.appendChild(row);
+    });
+
+    container.querySelectorAll('.copy-secret-link-btn').forEach(btn => {
+      btn.onclick = (e) => {
+        const link = e.currentTarget.getAttribute('data-link');
+        navigator.clipboard.writeText(link).then(() => {
+          showToast(t('toast.copySuccess'), "success");
+        });
+      };
     });
 
     container.querySelectorAll('.burn-btn').forEach(btn => {
@@ -331,7 +388,7 @@ async function loadUserSecrets(lastSecretId = null) {
       const paginationRow = document.createElement('tr');
       paginationRow.id = 'pagination-row';
       paginationRow.innerHTML = `
-        <td colspan="4" style="text-align: center; padding: 1rem;">
+        <td colspan="5" style="text-align: center; padding: 1rem;">
           <button id="load-more-btn" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">${t('dashboard.loadMore')}</button>
         </td>
       `;
@@ -345,7 +402,7 @@ async function loadUserSecrets(lastSecretId = null) {
   } catch (e) {
     container.innerHTML = `
       <tr>
-        <td colspan="4" style="text-align:center; padding: 2rem; color: var(--accent-color);">
+        <td colspan="5" style="text-align:center; padding: 2rem; color: var(--accent-color);">
           ${t('toast.networkError') || "Error loading secrets."}
         </td>
       </tr>
@@ -366,12 +423,16 @@ async function burnSecret(id) {
     const item = document.getElementById(`secret-item-${id}`);
     if (item) item.remove();
     
+    // Refresh storage usage details
+    await checkAuth();
+    updateQuotaUI();
+
     const container = document.getElementById('secrets-table-body');
     const remainingRows = container.querySelectorAll('tr:not(#pagination-row)').length;
     if (remainingRows === 0) {
       container.innerHTML = `
         <tr>
-          <td colspan="4" style="text-align:center; padding: 2rem; color: var(--text-muted);">
+          <td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-muted);">
             ${t('dashboard.emptyList')}
           </td>
         </tr>

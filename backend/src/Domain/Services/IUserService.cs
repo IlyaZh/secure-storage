@@ -29,4 +29,17 @@ public interface IUserService
     /// Get invites issued by a specific user with cursor pagination
     /// </summary>
     Task<List<Invite>> GetUserInvitesAsync(Guid userId, Guid? lastInviteId, CancellationToken ct);
+
+    /// <summary>
+    /// Get user storage usage statistics (used bytes and quota bytes)
+    /// </summary>
+    Task<UserStorageUsageDto> GetStorageUsageAsync(Guid userId, CancellationToken ct);
 }
+
+/// <summary>
+/// DTO for storage usage statistics
+/// </summary>
+public record UserStorageUsageDto(
+    long UsedBytes,
+    long QuotaBytes
+);

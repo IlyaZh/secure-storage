@@ -1,13 +1,15 @@
 import { showToast } from './utils/toast.js';
 import { navigate } from './router.js';
 
-import { t } from './locales/i18n.js';
+import { t, getLanguage, setLanguage } from './locales/i18n.js';
 
 export const state = {
   currentUser: {
     isAuthenticated: false,
     email: null,
-    id: null
+    id: null,
+    usedBytes: 0,
+    quotaBytes: 0
   }
 };
 
@@ -38,6 +40,8 @@ export async function checkAuth() {
     state.currentUser.isAuthenticated = data.isAuthenticated;
     state.currentUser.email = data.email || null;
     state.currentUser.id = data.id || null;
+    state.currentUser.usedBytes = data.usedBytes || 0;
+    state.currentUser.quotaBytes = data.quotaBytes || 0;
     updateNavUI();
   } catch (e) {
     state.currentUser.isAuthenticated = false;
@@ -48,8 +52,19 @@ export function updateNavUI() {
   const navContainer = document.getElementById('nav-links');
   if (!navContainer) return;
 
+  const currentLang = getLanguage();
+  const nextLang = currentLang === 'ru' ? 'en' : 'ru';
+  const langLabel = currentLang === 'ru' ? 'EN' : 'RU';
+  
+  const langSwitcherHtml = `
+    <button id="lang-toggle-btn" class="nav-btn secondary" style="background:rgba(255,255,255,0.02); border:1px solid var(--card-border); cursor:pointer; font-size:0.85rem; padding:0.4rem 0.8rem; height:fit-content; align-self:center; margin-right:0.5rem;">
+      ${langLabel}
+    </button>
+  `;
+
   if (state.currentUser.isAuthenticated) {
     navContainer.innerHTML = `
+      ${langSwitcherHtml}
       <span style="font-size:0.9rem; color: var(--text-muted);">${state.currentUser.email}</span>
       <a href="#/dashboard" class="nav-btn secondary">${t('nav.cabinet')}</a>
       <a href="#/create" class="nav-btn primary">${t('nav.create')}</a>
@@ -61,8 +76,16 @@ export function updateNavUI() {
     }
   } else {
     navContainer.innerHTML = `
+      ${langSwitcherHtml}
       <a href="#/login" class="nav-btn primary">${t('nav.login')}</a>
     `;
+  }
+
+  const langBtn = document.getElementById('lang-toggle-btn');
+  if (langBtn) {
+    langBtn.onclick = () => {
+      setLanguage(nextLang);
+    };
   }
 }
 

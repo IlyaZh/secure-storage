@@ -148,6 +148,9 @@ async function submitSecret() {
     const hexKey = bufToHex(rawKeyBytes);
     const secretLink = `${window.location.origin}/#/secret/${result.id}:${hexKey}`;
 
+    // Store key locally for dashboard copy links (Zero-Knowledge compatible)
+    localStorage.setItem(`secret-key-${result.id}`, hexKey);
+
     document.getElementById('result-link-text').innerText = secretLink;
     document.getElementById('result-link-area').style.display = 'block';
     

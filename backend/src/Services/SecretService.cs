@@ -158,6 +158,7 @@ public class SecretService(AppDbContext _dbContext, ILogger<SecretService> _logg
                 s.Id,
                 s.Comment,
                 s.IsOneTime,
+                s.Size,
                 s.CreatedAt
             ))
             .ToListAsync(ct);
