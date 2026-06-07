@@ -46,7 +46,8 @@ public class UserService(
     {
         var normalizedEmail = email.ToLower().Trim();
 
-        using var transaction = await _dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+        var isInMemory = _dbContext.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory";
+        using var transaction = isInMemory ? null : await _dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         try
         {
             var userExists = await _dbContext.Users.AnyAsync(u => u.Email == normalizedEmail, ct);
@@ -72,12 +73,18 @@ public class UserService(
             _dbContext.Users.Add(newUser);
             await _dbContext.SaveChangesAsync(ct);
 
-            await transaction.CommitAsync(ct);
+            if (transaction != null)
+            {
+                await transaction.CommitAsync(ct);
+            }
             return RegistrationResult.Success;
         }
         catch
         {
-            await transaction.RollbackAsync(ct);
+            if (transaction != null)
+            {
+                await transaction.RollbackAsync(ct);
+            }
             throw;
         }
     }

@@ -221,9 +221,21 @@ public class SecretService(AppDbContext _dbContext, ILogger<SecretService> _logg
         }
 
         // 3. Delete records from database
-        var deletedRows = await _dbContext.Secrets
-            .Where(s => secretsToDelete.Contains(s.Id))
-            .ExecuteDeleteAsync(ct);
+        int deletedRows;
+        if (_dbContext.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            var secrets = await _dbContext.Secrets
+                .Where(s => secretsToDelete.Contains(s.Id))
+                .ToListAsync(ct);
+            _dbContext.Secrets.RemoveRange(secrets);
+            deletedRows = await _dbContext.SaveChangesAsync(ct);
+        }
+        else
+        {
+            deletedRows = await _dbContext.Secrets
+                .Where(s => secretsToDelete.Contains(s.Id))
+                .ExecuteDeleteAsync(ct);
+        }
 
         return deletedRows;
     }

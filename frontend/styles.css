@@ -161,13 +161,21 @@ header {
   color: var(--text-color);
 }
 
+.nav-btn.secondary:hover,
+a.nav-btn.secondary:hover {
+  color: var(--text-color) !important;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
 .nav-btn.primary {
   background-color: var(--primary-color);
   color: white;
 }
 
-.nav-btn.primary:hover {
+.nav-btn.primary:hover,
+a.nav-btn.primary:hover {
   background-color: var(--primary-hover);
+  color: white !important;
 }
 
 /* Main Container */
@@ -347,9 +355,10 @@ textarea.form-input {
   color: white;
 }
 
-.btn-primary:hover {
+.btn-primary:hover,
+a.btn-primary:hover {
   background-color: var(--primary-hover);
-  color: white;
+  color: white !important;
   transform: translateY(-1px);
 }
 
@@ -359,9 +368,10 @@ textarea.form-input {
   border: 1px solid var(--card-border);
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover,
+a.btn-secondary:hover {
   background-color: rgba(255, 255, 255, 0.03);
-  color: var(--text-color);
+  color: var(--text-color) !important;
 }
 
 .btn-danger {
@@ -369,9 +379,10 @@ textarea.form-input {
   color: white;
 }
 
-.btn-danger:hover {
+.btn-danger:hover,
+a.btn-danger:hover {
   background-color: var(--accent-hover);
-  color: white;
+  color: white !important;
 }
 
 .btn-block {

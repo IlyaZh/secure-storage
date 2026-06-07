@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Run Backend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v6
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 9.0.x
+
+    - name: Restore Dependencies
+      run: dotnet restore backend/src/SecureStorage.csproj
+
+    - name: Restore Test Dependencies
+      run: dotnet restore backend/tests/SecureStorage.Tests/SecureStorage.Tests.csproj
+
+    - name: Build Source
+      run: dotnet build backend/src/SecureStorage.csproj --no-restore
+
+    - name: Build Tests
+      run: dotnet build backend/tests/SecureStorage.Tests/SecureStorage.Tests.csproj --no-restore
+
+    - name: Run Tests
+      run: dotnet test backend/tests/SecureStorage.Tests/SecureStorage.Tests.csproj --no-build --verbosity normal
+
+  docker:
+    name: Verify Docker Build
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v6
+
+    - name: Build Backend Docker Image
+      run: docker build -f backend/Dockerfile backend
