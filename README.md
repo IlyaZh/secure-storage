@@ -71,6 +71,29 @@ docker compose up --build
 *   **Frontend URL:** `http://localhost:3005`
 *   **Backend API URL:** `http://localhost:5001`
 
+#### 🔑 Bootstrapping the First User
+
+Since registration is invite-only, you must bootstrap the database with a first invite code to register your initial administrator/user account:
+
+1. Connect to the running MySQL database container:
+   ```bash
+   make db-connect
+   ```
+   *(Alternatively, run `docker exec -it mysql_container mysql -uroot -ppass secret_share_db`)*
+
+2. Generate a UUIDv7 (e.g. `01900bf4-b05b-7b00-843c-8a18c515e06d`) and insert an invite record specifying your target Google account email address:
+   ```sql
+   INSERT INTO invites (id, email, is_used, issued_by_user_id, created_at)
+   VALUES ('01900bf4-b05b-7b00-843c-8a18c515e06d', 'your-email@gmail.com', 0, '00000000-0000-0000-0000-000000000000', NOW());
+   ```
+
+3. Navigate to the registration route in your browser using the generated invite code:
+   ```text
+   http://localhost:3005/#/register?invite=01900bf4-b05b-7b00-843c-8a18c515e06d
+   ```
+
+4. Complete registration via Google OAuth. The system will activate your account and mark the invite as used. Once logged in, you can generate invitations for other users directly from the user dashboard.
+
 ### Option 2: Local Backend Development
 
 1.  Navigate to the `backend/` directory:
