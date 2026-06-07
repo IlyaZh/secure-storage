@@ -105,4 +105,26 @@ public class AuthController(
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return Ok();
     }
+
+    /// <summary>
+    /// Returns the authentication status and details of the currently logged-in user.
+    /// </summary>
+    [HttpGet("me")]
+    public IActionResult GetCurrentUser()
+    {
+        if (User.Identity == null || !User.Identity.IsAuthenticated)
+        {
+            return Ok(new { isAuthenticated = false });
+        }
+
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        return Ok(new
+        {
+            isAuthenticated = true,
+            email,
+            id
+        });
+    }
 }

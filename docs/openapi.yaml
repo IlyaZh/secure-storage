@@ -43,6 +43,28 @@ paths:
         '200':
           description: Successfully logged out.
 
+  /api/auth/me:
+    get:
+      summary: Get Current User Session Info
+      description: Returns the authentication status, email, and ID of the currently logged-in user.
+      responses:
+        '200':
+          description: Session info returned successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isAuthenticated:
+                    type: boolean
+                  email:
+                    type: string
+                    nullable: true
+                  id:
+                    type: string
+                    format: uuid
+                    nullable: true
+
   /api/secrets:
     post:
       summary: Create a New Secret

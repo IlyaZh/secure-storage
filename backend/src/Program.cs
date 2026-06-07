@@ -10,6 +10,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(builder.Configuration["AppSettings:FrontendUrl"] ?? "http://localhost:3005")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // Settings
 builder.Services.Configure<GoogleAuthentificationSettings>(builder.Configuration.GetSection("Authentication:Google"));
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
@@ -47,6 +58,8 @@ builder.Services.AddHostedService<CleanupWorker>();
 var app = builder.Build();
 
 app.UseRouting();
+
+app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
