@@ -1,4 +1,4 @@
-const CACHE_NAME = 'secure-storage-cache-v1.1.3';
+const CACHE_NAME = 'secure-storage-cache-v1.1.4';
 const ASSETS = [
   './',
   './index.html',
@@ -48,8 +48,12 @@ self.addEventListener('activate', (event) => {
 
 // Fetch Event (Cache-first for static assets)
 self.addEventListener('fetch', (event) => {
-  // Skip API requests and non-GET requests
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
+  // Skip API, non-GET, and non-HTTP/HTTPS requests
+  if (
+    event.request.method !== 'GET' ||
+    event.request.url.includes('/api/') ||
+    (!event.request.url.startsWith('http://') && !event.request.url.startsWith('https://'))
+  ) {
     return;
   }
 

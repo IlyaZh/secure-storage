@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SecureStorage.Data;
 using SecureStorage.Domain.Entities;
-using SecureStorage.Domain.Enums;
 
 namespace SecureStorage.Domain.Services;
 
@@ -45,11 +44,17 @@ public class SecretService(AppDbContext _dbContext, ILogger<SecretService> _logg
                                         string comment,
                                         bool isOneTime,
                                         byte[] iv,
-                                        ContentType contentType,
+                                        string contentType,
                                         string? fileName,
                                         CancellationToken ct)
     {
-        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == ownerId, ct) ?? throw new UnauthorizedAccessException("The user not found");
+        Console.WriteLine($"[SecretService] CreateSecretAsync: ownerId = '{ownerId}'");
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == ownerId, ct);
+        if (user == null)
+        {
+            Console.WriteLine($"[SecretService] CreateSecretAsync: User '{ownerId}' not found in database!");
+            throw new InvalidOperationException("The user not found");
+        }
         var secretId = Guid.CreateVersion7();
         var now = DateTime.UtcNow;
         var secret = new Secret
@@ -73,11 +78,11 @@ public class SecretService(AppDbContext _dbContext, ILogger<SecretService> _logg
         }
 
         var filePath = Path.Combine(storagePath, secretId.ToString());
-        secret.Size = contentStream.Length;
         using (var fileStream = File.Create(filePath))
         {
             await contentStream.CopyToAsync(fileStream, ct);
         }
+        secret.Size = new FileInfo(filePath).Length;
 
         _dbContext.Secrets.Add(secret);
         await _dbContext.SaveChangesAsync(ct);

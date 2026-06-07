@@ -129,13 +129,13 @@ async function submitSecret() {
     const { ciphertext, iv } = await encryptData(plainDataBytes, rawKeyBytes);
 
     const headers = {
-      'X-Secret-Comment': comment,
+      'X-Secret-Comment': encodeURIComponent(comment),
       'X-Secret-IsOneTime': isOneTime.toString(),
       'X-Secret-ContentType': contentType,
       'X-Secret-IV': arrayBufferToBase64(iv)
     };
     if (fileName) {
-      headers['X-Secret-FileName'] = fileName;
+      headers['X-Secret-FileName'] = encodeURIComponent(fileName);
     }
 
     const response = await apiFetch('/api/secrets', {

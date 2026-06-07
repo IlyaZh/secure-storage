@@ -15,6 +15,8 @@ services:
     depends_on:
       mysql_db:
         condition: service_healthy
+    volumes:
+      - ./secrets_data:/app/Storage
 
   mysql_db:
     image: mysql:8.0

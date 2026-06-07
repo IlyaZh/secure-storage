@@ -50,7 +50,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.Comment).IsRequired();
             entity.Property(e => e.IsOneTime).IsRequired();
             entity.Property(e => e.IsBurned).IsRequired();
-            entity.Property(e => e.ContentType).IsRequired().HasConversion<string>().HasMaxLength(130);
+            entity.Property(e => e.ContentType).IsRequired().HasMaxLength(130);
             entity.Property(e => e.FileName).IsRequired();
             entity.Property(e => e.IV).IsRequired();
             entity.Property(e => e.Size).IsRequired();

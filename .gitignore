@@ -45,3 +45,4 @@ appsettings.local.json
 
 # Local database data
 mysql_data/
+secrets_data/

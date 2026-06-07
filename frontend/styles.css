@@ -349,6 +349,7 @@ textarea.form-input {
 
 .btn-primary:hover {
   background-color: var(--primary-hover);
+  color: white;
   transform: translateY(-1px);
 }
 
@@ -360,6 +361,7 @@ textarea.form-input {
 
 .btn-secondary:hover {
   background-color: rgba(255, 255, 255, 0.03);
+  color: var(--text-color);
 }
 
 .btn-danger {
@@ -369,6 +371,7 @@ textarea.form-input {
 
 .btn-danger:hover {
   background-color: var(--accent-hover);
+  color: white;
 }
 
 .btn-block {
