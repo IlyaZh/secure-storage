@@ -5,6 +5,8 @@ using SecureStorage.Domain.Services;
 
 namespace SecureStorage.Controllers;
 
+public record CreateInviteRequest(string Email);
+
 [Authorize]
 [ApiController]
 [Route("api/invites")]
@@ -13,13 +15,11 @@ public class InvitesController(
 ) : ControllerBase
 {
     /// <summary>
-    /// Generates a new invite code for the system.
+    /// Generates a new invite code for the system for a specific target email.
     /// Accessible only by logged-in users.
     /// </summary>
-    /// <param name="ct">The cancellation token.</param>
-    /// <returns>The generated invite code UUID.</returns>
     [HttpPost]
-    public async Task<IActionResult> CreateInvite(CancellationToken ct)
+    public async Task<IActionResult> CreateInvite([FromBody] CreateInviteRequest request, CancellationToken ct)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
@@ -27,7 +27,35 @@ public class InvitesController(
             return Unauthorized();
         }
 
-        var invite = await _userService.CreateInviteAsync(userId, ct);
-        return Ok(new { code = invite.Id });
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            return BadRequest("Email is required.");
+        }
+
+        try
+        {
+            var invite = await _userService.CreateInviteAsync(userId, request.Email, ct);
+            return Ok(new { code = invite.Id });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Gets invites issued by the currently logged-in user with cursor pagination.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> GetMyInvites([FromQuery] Guid? lastInviteId, CancellationToken ct)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var invites = await _userService.GetUserInvitesAsync(userId, lastInviteId, ct);
+        return Ok(invites);
     }
 }

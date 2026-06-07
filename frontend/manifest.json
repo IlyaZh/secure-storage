@@ -1,0 +1,21 @@
+{
+  "short_name": "Secure-Store",
+  "name": "Secure-Store - secure secret sharing",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./",
+  "background_color": "#0d0d1e",
+  "theme_color": "#6c5ce7",
+  "display": "standalone",
+  "orientation": "portrait"
+}

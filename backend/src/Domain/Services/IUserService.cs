@@ -1,6 +1,9 @@
 using SecureStorage.Domain.Entities;
+using SecureStorage.Domain.Enums;
 
 namespace SecureStorage.Domain.Services;
+
+
 
 /// <summary>
 /// Interface for user service
@@ -9,34 +12,21 @@ public interface IUserService
 {
     /// <summary>
     /// Get user by email
-    /// 
-    /// Arguments:
-    /// - email: The email of the user to get
-    /// - ct: The cancellation token
-    /// 
-    /// Returns:
-    /// - The user if found
-    /// 
     /// </summary>
     Task<User?> GetByEmailAsync(string email, CancellationToken ct);
 
     /// <summary>
     /// Register user with invite code
-    /// 
-    /// Arguments:
-    /// - email: The email of the user to register
-    /// - inviteCode: The invite code to use for registration
-    /// - ct: The cancellation token
-    /// 
-    /// Returns:
-    /// - True if the user was registered successfully
-    /// - False if the user was not registered successfully
-    /// 
     /// </summary>
-    Task<bool> RegisterWithInviteAsync(string email, Guid inviteCode, CancellationToken ct);
+    Task<RegistrationResult> RegisterWithInviteAsync(string email, Guid inviteCode, CancellationToken ct);
 
     /// <summary>
-    /// Create a new invite associated with a user
+    /// Create a new invite associated with a user for a specific email
     /// </summary>
-    Task<Invite> CreateInviteAsync(Guid issuedByUserId, CancellationToken ct);
+    Task<Invite> CreateInviteAsync(Guid issuedByUserId, string email, CancellationToken ct);
+
+    /// <summary>
+    /// Get invites issued by a specific user with cursor pagination
+    /// </summary>
+    Task<List<Invite>> GetUserInvitesAsync(Guid userId, Guid? lastInviteId, CancellationToken ct);
 }

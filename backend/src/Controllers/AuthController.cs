@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SecureStorage.Domain.Entities;
+using SecureStorage.Domain.Enums;
 using SecureStorage.Domain.Services;
 
 namespace SecureStorage.Controllers;
@@ -78,11 +79,17 @@ public class AuthController(
                 return Redirect($"{_appSettings.Value.FrontendUrl}/#/auth-error?reason=no_account");
             }
 
-            var registrationSuccess = await _userService.RegisterWithInviteAsync(email, inviteCode, ct);
-            if (!registrationSuccess)
+            var registrationResult = await _userService.RegisterWithInviteAsync(email, inviteCode, ct);
+            if (registrationResult != RegistrationResult.Success)
             {
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                return Redirect($"{_appSettings.Value.FrontendUrl}/#/register?error=invite_invalid");
+                var errParam = registrationResult switch
+                {
+                    RegistrationResult.EmailMismatch => "email_mismatch",
+                    RegistrationResult.AlreadyRegistered => "already_registered",
+                    _ => "invite_invalid"
+                };
+                return Redirect($"{_appSettings.Value.FrontendUrl}/#/register?error={errParam}");
             }
 
             user = await _userService.GetByEmailAsync(email, ct);

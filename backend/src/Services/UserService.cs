@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SecureStorage.Data;
 using SecureStorage.Domain.Entities;
+using SecureStorage.Domain.Enums;
 
 namespace SecureStorage.Domain.Services;
 
@@ -41,7 +42,7 @@ public class UserService(
     /// - False if the user was not registered successfully
     /// 
     /// </summary>
-    public async Task<bool> RegisterWithInviteAsync(string email, Guid inviteCode, CancellationToken ct)
+    public async Task<RegistrationResult> RegisterWithInviteAsync(string email, Guid inviteCode, CancellationToken ct)
     {
         var normalizedEmail = email.ToLower().Trim();
 
@@ -50,16 +51,21 @@ public class UserService(
         {
             var userExists = await _dbContext.Users.AnyAsync(u => u.Email == normalizedEmail, ct);
             if (userExists)
-                return false;
+                return RegistrationResult.AlreadyRegistered;
 
             var invite = await _dbContext.Invites.FirstOrDefaultAsync(inv => inv.Id == inviteCode && !inv.IsUsed, ct);
             if (invite == null)
             {
-                return false;
+                return RegistrationResult.InviteNotFoundOrUsed;
+            }
+
+            if (invite.Email != normalizedEmail)
+            {
+                return RegistrationResult.EmailMismatch;
             }
 
             invite.IsUsed = true;
-            invite.Email = normalizedEmail;
+            invite.UsedAt = DateTime.UtcNow;
 
             var newUser = new User { Id = Guid.CreateVersion7(), Email = normalizedEmail, CreatedAt = DateTime.UtcNow };
 
@@ -67,7 +73,7 @@ public class UserService(
             await _dbContext.SaveChangesAsync(ct);
 
             await transaction.CommitAsync(ct);
-            return true;
+            return RegistrationResult.Success;
         }
         catch
         {
@@ -77,14 +83,28 @@ public class UserService(
     }
 
     /// <summary>
-    /// Create a new invite associated with a user
+    /// Create a new invite associated with a user for a specific email
     /// </summary>
-    public async Task<Invite> CreateInviteAsync(Guid issuedByUserId, CancellationToken ct)
+    public async Task<Invite> CreateInviteAsync(Guid issuedByUserId, string email, CancellationToken ct)
     {
+        var normalizedEmail = email.ToLower().Trim();
+
+        var userExists = await _dbContext.Users.AnyAsync(u => u.Email == normalizedEmail, ct);
+        if (userExists)
+        {
+            throw new InvalidOperationException("User already registered.");
+        }
+
+        var activeInviteExists = await _dbContext.Invites.AnyAsync(inv => inv.Email == normalizedEmail && !inv.IsUsed, ct);
+        if (activeInviteExists)
+        {
+            throw new InvalidOperationException("Active invite already exists.");
+        }
+
         var invite = new Invite
         {
             Id = Guid.CreateVersion7(),
-            Email = string.Empty,
+            Email = normalizedEmail,
             IsUsed = false,
             IssuedByUserId = issuedByUserId,
             CreatedAt = DateTime.UtcNow
@@ -93,5 +113,24 @@ public class UserService(
         _dbContext.Invites.Add(invite);
         await _dbContext.SaveChangesAsync(ct);
         return invite;
+    }
+
+    /// <summary>
+    /// Get invites issued by a specific user with cursor pagination
+    /// </summary>
+    public async Task<List<Invite>> GetUserInvitesAsync(Guid userId, Guid? lastInviteId, CancellationToken ct)
+    {
+        var query = _dbContext.Invites
+            .Where(inv => inv.IssuedByUserId == userId);
+
+        if (lastInviteId.HasValue)
+        {
+            query = query.Where(inv => inv.Id < lastInviteId.Value);
+        }
+
+        return await query
+            .OrderByDescending(inv => inv.Id)
+            .Take(20)
+            .ToListAsync(ct);
     }
 }
