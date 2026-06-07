@@ -126,6 +126,23 @@ paths:
                 $ref: '#/components/schemas/SecretDto'
         '404':
           description: Secret not found, expired, or already burned.
+    delete:
+      summary: Burn (Invalidate) a Secret
+      description: Marks a secret as burned (invalidated) immediately, preventing any further retrieval. Only the owner of the secret can perform this action.
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Secret successfully burned.
+        '401':
+          description: Unauthorized.
 
   /api/secrets/my:
     get:

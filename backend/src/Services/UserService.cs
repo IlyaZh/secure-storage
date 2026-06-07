@@ -45,24 +45,34 @@ public class UserService(
     {
         var normalizedEmail = email.ToLower().Trim();
 
-        var userExists = await _dbContext.Users.AnyAsync(u => u.Email == normalizedEmail, ct);
-        if (userExists)
-            return false;
-
-        var invite = await _dbContext.Invites.FirstOrDefaultAsync(inv => inv.Id == inviteCode && !inv.IsUsed, ct);
-        if (invite == null)
+        using var transaction = await _dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+        try
         {
-            return false;
+            var userExists = await _dbContext.Users.AnyAsync(u => u.Email == normalizedEmail, ct);
+            if (userExists)
+                return false;
+
+            var invite = await _dbContext.Invites.FirstOrDefaultAsync(inv => inv.Id == inviteCode && !inv.IsUsed, ct);
+            if (invite == null)
+            {
+                return false;
+            }
+
+            invite.IsUsed = true;
+            invite.Email = normalizedEmail;
+
+            var newUser = new User { Id = Guid.CreateVersion7(), Email = normalizedEmail, CreatedAt = DateTime.UtcNow };
+
+            _dbContext.Users.Add(newUser);
+            await _dbContext.SaveChangesAsync(ct);
+
+            await transaction.CommitAsync(ct);
+            return true;
         }
-
-        invite.IsUsed = true;
-        invite.Email = normalizedEmail;
-
-        var newUser = new User { Id = Guid.CreateVersion7(), Email = normalizedEmail, CreatedAt = DateTime.UtcNow };
-
-        _dbContext.Users.Add(newUser);
-        await _dbContext.SaveChangesAsync(ct);
-
-        return true;
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
     }
 }

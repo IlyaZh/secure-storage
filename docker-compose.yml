@@ -11,6 +11,7 @@ services:
       - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
       - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
       - AppSettings__FrontendUrl=${FRONTEND_URL}
+      - AppSettings__MaxSecretSizeBytes=${MAX_SECRET_SIZE_BYTES}
     depends_on:
       mysql_db:
         condition: service_healthy

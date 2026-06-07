@@ -1,6 +1,9 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using SecureStorage.Domain.Entities;
 using SecureStorage.Domain.Enums;
 using SecureStorage.Domain.Services;
 
@@ -9,7 +12,10 @@ namespace SecureStorage.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/secrets")]
-public class SecretsController(ISecretService _secretService) : ControllerBase
+public class SecretsController(
+    ISecretService _secretService,
+    IOptions<AppSettings> _appSettings
+) : ControllerBase
 {
     [HttpPost]
     [Authorize]
@@ -19,6 +25,17 @@ public class SecretsController(ISecretService _secretService) : ControllerBase
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
         {
             return Unauthorized();
+        }
+
+        if (Request.ContentLength.HasValue && Request.ContentLength.Value > _appSettings.Value.MaxSecretSizeBytes)
+        {
+            return BadRequest("Secret size exceeds maximum limit.");
+        }
+
+        var maxRequestBodySizeFeature = HttpContext.Features.Get<IHttpMaxRequestBodySizeFeature>();
+        if (maxRequestBodySizeFeature != null)
+        {
+            maxRequestBodySizeFeature.MaxRequestBodySize = _appSettings.Value.MaxSecretSizeBytes;
         }
 
         var comment = Request.Headers["X-Secret-Comment"].ToString();
@@ -66,6 +83,7 @@ public class SecretsController(ISecretService _secretService) : ControllerBase
     }
 
     [HttpGet("{secretId}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetSecret(Guid secretId, CancellationToken ct)
     {
         var secret = await _secretService.GetSecretAsync(secretId, ct);
@@ -74,6 +92,20 @@ public class SecretsController(ISecretService _secretService) : ControllerBase
             return NotFound();
         }
         return Ok(secret);
+    }
+
+    [HttpDelete("{secretId}")]
+    [Authorize]
+    public async Task<IActionResult> BurnSecret(Guid secretId, CancellationToken ct)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
+        {
+            return Unauthorized();
+        }
+
+        await _secretService.BurnSecretAsync(secretId, userId, ct);
+        return NoContent();
     }
 
     [HttpGet("my")]
