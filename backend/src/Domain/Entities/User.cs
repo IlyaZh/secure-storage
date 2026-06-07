@@ -8,7 +8,7 @@ public class User
     /// <summary>
     /// Gets or sets the unique identifier of the user.
     /// </summary>
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.CreateVersion7();
 
     /// <summary>
     /// Gets or sets the email address of the user.

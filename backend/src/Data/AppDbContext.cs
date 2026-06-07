@@ -7,6 +7,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<User> Users { get; set; }
     public DbSet<Invite> Invites { get; set; }
+    public DbSet<Secret> Secrets { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -18,7 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.ToTable("users");
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Email).IsRequired();
+            entity.Property(e => e.Email).IsRequired().HasConversion(v => v.ToLower().Trim(), v => v);
 
             entity.HasIndex(e => e.Email).IsUnique();
             entity.HasIndex(e => e.Id).IsUnique();
@@ -29,7 +30,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.ToTable("invites");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id);
-            entity.Property(e => e.Email).IsRequired(false);
+            entity.Property(e => e.Email).IsRequired().HasConversion(v => v.ToLower().Trim(), v => v);
             entity.Property(e => e.IsUsed).HasDefaultValue(false);
             entity.Property(e => e.IssuedByUserId).IsRequired();
             entity.Property(e => e.UsedAt).IsRequired(false);
@@ -51,6 +52,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.ContentType).IsRequired().HasConversion<string>().HasMaxLength(130);
             entity.Property(e => e.FileName).IsRequired();
             entity.Property(e => e.IV).IsRequired();
+            entity.Property(e => e.Size).IsRequired();
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.ExpiresAt).IsRequired();
 
