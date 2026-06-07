@@ -1,0 +1,197 @@
+openapi: 3.0.3
+info:
+  title: Secure Storage API
+  description: API for the self-hosted secure secret sharing platform.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5001
+    description: Local Backend Server
+paths:
+  /api/auth/login:
+    get:
+      summary: Initiate Google OAuth 2.0 Flow
+      description: Redirects the user to the Google login page.
+      parameters:
+        - name: inviteCode
+          in: query
+          description: Optional invite code for registration.
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '302':
+          description: Redirect to Google OAuth page.
+
+  /api/auth/callback:
+    get:
+      summary: OAuth Callback Endpoint
+      description: Handles the callback from Google, authenticates the user, and redirects back to the frontend.
+      responses:
+        '302':
+          description: Redirects to the configured Frontend URL.
+        '400':
+          description: Authentication failed or email cannot be retrieved.
+        '403':
+          description: Registration failed (invalid invite code).
+
+  /api/auth/logout:
+    get:
+      summary: Log Out Current User
+      description: Signs the user out of the cookie authentication scheme.
+      responses:
+        '200':
+          description: Successfully logged out.
+
+  /api/secrets:
+    post:
+      summary: Create a New Secret
+      description: Uploads and encrypts a secret (text or file payload).
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: X-Secret-Comment
+          in: header
+          description: Description or comment for the secret.
+          required: true
+          schema:
+            type: string
+        - name: X-Secret-IsOneTime
+          in: header
+          description: Set to true if the secret should self-destruct after the first read.
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: X-Secret-ContentType
+          in: header
+          description: The MIME content type of the secret payload.
+          required: false
+          schema:
+            type: string
+            default: application/octet-stream
+        - name: X-Secret-FileName
+          in: header
+          description: The optional original file name if a file is being uploaded.
+          required: false
+          schema:
+            type: string
+        - name: X-Secret-IV
+          in: header
+          description: Base64-encoded Initialization Vector (IV) for the encryption.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Raw encrypted binary stream.
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Secret created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+        '400':
+          description: Missing IV, comment, or invalid content type.
+        '401':
+          description: Unauthorized.
+
+  /api/secrets/{secretId}:
+    get:
+      summary: Retrieve a Secret
+      description: Returns the encrypted payload and metadata of a secret by its ID. One-time secrets will be marked as burned immediately.
+      parameters:
+        - name: secretId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Secret retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecretDto'
+        '404':
+          description: Secret not found, expired, or already burned.
+
+  /api/secrets/my:
+    get:
+      summary: Get User's Secrets
+      description: Retrieves a paginated list of secrets created by the currently authenticated user.
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: lastSecretId
+          in: query
+          description: Cursor ID (Guid v7) of the last secret from the previous page for pagination.
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of secrets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SecretSummaryDto'
+        '401':
+          description: Unauthorized.
+
+components:
+  securitySchemes:
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: .AspNetCore.Cookies
+  schemas:
+    SecretDto:
+      type: object
+      properties:
+        encryptedData:
+          type: string
+          format: byte
+          description: Base64-encoded encrypted secret content.
+        iv:
+          type: string
+          format: byte
+          description: Base64-encoded Initialization Vector.
+        contentType:
+          type: string
+          description: Content type of the secret payload.
+        fileName:
+          type: string
+          nullable: true
+          description: Original file name.
+        isOneTime:
+          type: boolean
+          description: Whether this is a burn-on-read secret.
+    SecretSummaryDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        comment:
+          type: string
+          nullable: true
+        isOneTime:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
