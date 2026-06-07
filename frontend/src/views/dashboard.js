@@ -334,16 +334,17 @@ async function loadUserSecrets(lastSecretId = null) {
     }
 
     secrets.forEach(s => {
+      const secretId = s.id || s.Id;
       const dateStr = new Date(s.createdAt).toLocaleString();
-      const lowerId = s.id.toLowerCase();
-      const upperId = s.id.toUpperCase();
+      const lowerId = secretId.toLowerCase();
+      const upperId = secretId.toUpperCase();
       const localKey = localStorage.getItem(`secret-key-${lowerId}`) || 
-                        localStorage.getItem(`secret-key-${s.id}`) || 
+                        localStorage.getItem(`secret-key-${secretId}`) || 
                         localStorage.getItem(`secret-key-${upperId}`);
-      const secretLink = localKey ? `${window.location.origin}/#/secret/${s.id}:${localKey}` : '';
+      const secretLink = localKey ? `${window.location.origin}/#/secret/${secretId}:${localKey}` : '';
 
       const row = document.createElement('tr');
-      row.id = `secret-item-${s.id}`;
+      row.id = `secret-item-${secretId}`;
       row.innerHTML = `
         <td>
           <span class="secret-table-comment">${escapeHtml(s.comment)}</span>
@@ -361,7 +362,7 @@ async function loadUserSecrets(lastSecretId = null) {
           ${secretLink
             ? `<button class="btn btn-secondary copy-secret-link-btn" data-link="${secretLink}" style="padding:0.4rem 0.8rem; font-size:0.8rem; margin-right:0.5rem;">${t('dashboard.copyLinkBtn')}</button>`
             : `<button class="btn btn-secondary" disabled title="${t('dashboard.keyUnavailableTooltip')}" style="padding:0.4rem 0.8rem; font-size:0.8rem; margin-right:0.5rem; opacity:0.5; cursor:not-allowed;">${t('dashboard.copyLinkBtn')}</button>`}
-          <button class="btn btn-danger burn-btn" data-id="${s.id}" style="padding:0.4rem 0.8rem; font-size:0.8rem;">${t('dashboard.deleteBtn')}</button>
+          <button class="btn btn-danger burn-btn" data-id="${secretId}" style="padding:0.4rem 0.8rem; font-size:0.8rem;">${t('dashboard.deleteBtn')}</button>
         </td>
       `;
       container.appendChild(row);

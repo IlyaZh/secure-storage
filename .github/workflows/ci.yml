@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ master, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ master, develop ]
 
 jobs:
   test:
@@ -55,13 +55,13 @@ jobs:
         OWNER: ${{ github.repository_owner }}
 
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+      uses: docker/setup-qemu-action@v4
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
 
     - name: Log in to GitHub Container Registry
-      if: github.event_name != 'pull_request'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       uses: docker/login-action@v3
       with:
         registry: ghcr.io
@@ -69,13 +69,12 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build and Push Backend Docker Image
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         context: ./backend
         file: ./backend/Dockerfile
-        push: ${{ github.event_name != 'pull_request' }}
+        push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         tags: |
           ghcr.io/${{ steps.prep.outputs.owner }}/secure-storage-backend:latest
           ghcr.io/${{ steps.prep.outputs.owner }}/secure-storage-backend:${{ github.ref_name }}
           ghcr.io/${{ steps.prep.outputs.owner }}/secure-storage-backend:${{ github.sha }}
-

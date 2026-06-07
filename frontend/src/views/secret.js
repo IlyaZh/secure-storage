@@ -54,7 +54,10 @@ export async function renderViewSecret({ id, key }) {
       displayAreaHtml = `
         <label class="form-label">${t('view.decryptedLabel')}</label>
         <div class="decrypted-secret-box">${escapeHtml(text)}</div>
-        <button id="copy-secret-text-btn" class="btn btn-secondary">${t('view.copyBtn')}</button>
+        <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+          <button id="copy-secret-text-btn" class="btn btn-secondary">${t('view.copyBtn')}</button>
+          <button id="download-file-btn" class="btn btn-primary">${t('view.downloadBtn')}</button>
+        </div>
       `;
     }
 
@@ -99,6 +102,18 @@ export async function renderViewSecret({ id, key }) {
         const textElement = document.querySelector('.decrypted-secret-box');
         navigator.clipboard.writeText(textElement.innerText);
         showToast(t('toast.copySuccess'), "success");
+      };
+      document.getElementById('download-file-btn').onclick = () => {
+        const textElement = document.querySelector('.decrypted-secret-box');
+        const blob = new Blob([decryptedBytes], { type: 'text/plain' });
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = 'secret.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
       };
     }
 
