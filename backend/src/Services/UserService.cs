@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SecureStorage.Data;
 using SecureStorage.Domain.Entities;
 
-namespace SecureStorage.Services;
+namespace SecureStorage.Domain.Services;
 
 /// <summary>
 /// Service for managing users

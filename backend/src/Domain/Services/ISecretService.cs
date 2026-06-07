@@ -1,6 +1,6 @@
 using SecureStorage.Domain.Enums;
 
-namespace SecureStorage.Services;
+namespace SecureStorage.Domain.Services;
 
 /// <summary>
 /// Interface for secret service
@@ -66,7 +66,18 @@ public interface ISecretService
     /// </summary>
     Task BurnSecretAsync(Guid secretId, Guid ownerId, CancellationToken ct);
 
-
+    /// <summary>
+    /// Cleanup expired secrets batch
+    /// 
+    /// Arguments:
+    /// - batchSize: The number of secrets to delete in this batch
+    /// - ct: The cancellation token
+    /// 
+    /// Returns:
+    /// - The number of secrets cleaned up in this batch
+    /// 
+    /// </summary>
+    Task<int> CleanupExpiredSecretsBatchAsync(int batchSize, CancellationToken ct);
 };
 
 /// <summary>

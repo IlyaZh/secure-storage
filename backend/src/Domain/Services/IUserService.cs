@@ -1,6 +1,6 @@
 using SecureStorage.Domain.Entities;
 
-namespace SecureStorage.Services;
+namespace SecureStorage.Domain.Services;
 
 /// <summary>
 /// Interface for user service

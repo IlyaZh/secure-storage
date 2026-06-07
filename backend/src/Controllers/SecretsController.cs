@@ -2,7 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SecureStorage.Domain.Enums;
-using SecureStorage.Services;
+using SecureStorage.Domain.Services;
 
 namespace SecureStorage.Controllers;
 

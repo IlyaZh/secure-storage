@@ -1,14 +1,15 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SecureStorage.Data;
 using SecureStorage.Domain.Entities;
 using SecureStorage.Domain.Enums;
 
-namespace SecureStorage.Services;
+namespace SecureStorage.Domain.Services;
 
 /// <summary>
 /// Service for managing secrets.
 /// </summary>
-public class SecretService(AppDbContext _dbContext) : ISecretService
+public class SecretService(AppDbContext _dbContext, ILogger<SecretService> _logger) : ISecretService
 {
     /// <summary>
     /// The name of the storage folder
@@ -169,7 +170,7 @@ public class SecretService(AppDbContext _dbContext) : ISecretService
     {
         var secret = await _dbContext.Secrets.FirstOrDefaultAsync(s => s.Id == secretId
                                                                        && s.OwnerId == ownerId,
-                                                                   ct);
+                                                                    ct);
         if (secret == null)
         {
             return;
@@ -178,6 +179,48 @@ public class SecretService(AppDbContext _dbContext) : ISecretService
         secret.ExpiresAt = DateTime.UtcNow;
 
         await _dbContext.SaveChangesAsync(ct);
+    }
+
+    public async Task<int> CleanupExpiredSecretsBatchAsync(int batchSize, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+
+        // 1. Get the IDs of secrets to delete (only one batch)
+        var secretsToDelete = await _dbContext.Secrets
+            .Where(s => s.ExpiresAt <= now)
+            .Select(s => s.Id)
+            .Take(batchSize)
+            .ToListAsync(ct);
+
+        if (secretsToDelete.Count == 0)
+        {
+            return 0;
+        }
+
+        // 2. Delete files from disk
+        var storagePath = Path.Combine(Directory.GetCurrentDirectory(), StorageFolderName);
+        foreach (var id in secretsToDelete)
+        {
+            var filePath = Path.Combine(storagePath, id.ToString());
+            if (File.Exists(filePath))
+            {
+                try
+                {
+                    File.Delete(filePath);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to delete file {FilePath} from disk during cleanup.", filePath);
+                }
+            }
+        }
+
+        // 3. Delete records from database
+        var deletedRows = await _dbContext.Secrets
+            .Where(s => secretsToDelete.Contains(s.Id))
+            .ExecuteDeleteAsync(ct);
+
+        return deletedRows;
     }
 
 }

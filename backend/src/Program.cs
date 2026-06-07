@@ -1,16 +1,19 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.EntityFrameworkCore;
+using SecureStorage.BackgroundServices;
 using SecureStorage.Data;
 using SecureStorage.Domain.Entities;
-using SecureStorage.Services;
+using SecureStorage.Domain.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+// Settings
 builder.Services.Configure<GoogleAuthentificationSettings>(builder.Configuration.GetSection("Authentication:Google"));
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
+builder.Services.Configure<CleanupWorkerSettings>(builder.Configuration.GetSection("CleanupWorkerSettings"));
 
 // Database
 var connectionString = builder.Configuration.GetConnectionString("Database");
@@ -39,6 +42,8 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISecretService, SecretService>();
 
+builder.Services.AddHostedService<CleanupWorker>();
+
 var app = builder.Build();
 
 app.UseRouting();
@@ -48,6 +53,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// DB Migrations
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;

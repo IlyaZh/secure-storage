@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SecureStorage.Domain.Entities;
-using SecureStorage.Services;
+using SecureStorage.Domain.Services;
 
 namespace SecureStorage.Controllers;
 
