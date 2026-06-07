@@ -12,6 +12,7 @@ public class Secret
     public ContentType ContentType { get; set; } = ContentType.TextPlain;
     public string? FileName { get; set; }
     public byte[] IV { get; set; } = Array.Empty<byte>();
+    public long Size { get; set; } = 0;
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
     public DateTime ExpiresAt { get; set; }
 

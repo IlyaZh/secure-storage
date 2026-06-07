@@ -72,6 +72,7 @@ public class SecretService(AppDbContext _dbContext) : ISecretService
         }
 
         var filePath = Path.Combine(storagePath, secretId.ToString());
+        secret.Size = contentStream.Length;
         using (var fileStream = File.Create(filePath))
         {
             await contentStream.CopyToAsync(fileStream, ct);
