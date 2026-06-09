@@ -1,4 +1,4 @@
-namespace SecureStorage.Domain.Entities;
+namespace SecureStorage.Domain.Settings;
 
 public class GoogleAuthentificationSettings
 {

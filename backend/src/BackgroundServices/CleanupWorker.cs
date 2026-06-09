@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using SecureStorage.Data;
 using SecureStorage.Domain.Entities;
 using SecureStorage.Domain.Services;
+using SecureStorage.Domain.Settings;
 
 
 namespace SecureStorage.BackgroundServices;

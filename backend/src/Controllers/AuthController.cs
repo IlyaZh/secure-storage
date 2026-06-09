@@ -99,6 +99,14 @@ public class AuthController(
             new(ClaimTypes.Email, user!.Email),
             new(ClaimTypes.NameIdentifier, user!.Id.ToString())
         };
+
+        // Hardcoded user groups/roles (empty list by default)
+        var userGroups = new List<string> { }; 
+        foreach (var group in userGroups)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, group));
+        }
+
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,

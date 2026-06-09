@@ -1,4 +1,4 @@
-namespace SecureStorage.Domain.Entities;
+namespace SecureStorage.Domain.Settings;
 
 /// <summary>
 /// Settings for cleanup worker
