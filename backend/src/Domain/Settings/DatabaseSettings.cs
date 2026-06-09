@@ -5,9 +5,9 @@ public class DatabaseSettings
     public DatabaseRetries? Retries { get; set; }
 }
 
-public class DatabaseRetries(int MaxCount, int DelayMs)
+public class DatabaseRetries
 {
-    public int MaxCount { get; set; } = MaxCount;
-    public TimeSpan Delay { get; set; } = TimeSpan.FromMilliseconds(DelayMs);
-
+    public int MaxCount { get; set; }
+    public int DelayMs { get; set; }
+    public TimeSpan Delay => TimeSpan.FromMilliseconds(DelayMs);
 }
