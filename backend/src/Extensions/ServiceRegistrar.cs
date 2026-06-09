@@ -13,7 +13,9 @@ public static class ServiceRegistrar
     {
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<ISecretService, SecretService>();
+        builder.Services.AddScoped<IInvitesService, InvitesService>();
 
-        builder.Services.AddHostedService<CleanupWorker>();
+        builder.Services.AddHostedService<SecretsCleanupWorker>();
+        builder.Services.AddHostedService<InvitesCleanupWorker>();
     }
 }

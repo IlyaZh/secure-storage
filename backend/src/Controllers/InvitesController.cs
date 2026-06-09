@@ -11,7 +11,7 @@ public record CreateInviteRequest(string Email);
 [ApiController]
 [Route("api/invites")]
 public class InvitesController(
-    IUserService _userService
+    IInvitesService _invitesService
 ) : ControllerBase
 {
     /// <summary>
@@ -34,7 +34,7 @@ public class InvitesController(
 
         try
         {
-            var invite = await _userService.CreateInviteAsync(userId, request.Email, ct);
+            var invite = await _invitesService.CreateInviteAsync(userId, request.Email, ct);
             return Ok(new { code = invite.Id });
         }
         catch (InvalidOperationException ex)
@@ -55,7 +55,7 @@ public class InvitesController(
             return Unauthorized();
         }
 
-        var invites = await _userService.GetUserInvitesAsync(userId, lastInviteId, ct);
+        var invites = await _invitesService.GetUserInvitesAsync(userId, lastInviteId, ct);
         return Ok(invites);
     }
 }

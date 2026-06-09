@@ -9,6 +9,7 @@ public static class SettingsRegistar
     {
         builder.Services.Configure<GoogleAuthentificationSettings>(configuration.GetSection("Authentication:Google"));
         builder.Services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
-        builder.Services.Configure<CleanupWorkerSettings>(configuration.GetSection("CleanupWorker"));
+        builder.Services.Configure<SecretsCleanupWorkerSettings>(configuration.GetSection("SecretsCleanupWorker"));
+        builder.Services.Configure<InvitesCleanupWorkerSettings>(configuration.GetSection("InvitesCleanupWorker"));
     }
 }

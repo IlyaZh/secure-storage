@@ -21,16 +21,6 @@ public interface IUserService
     Task<RegistrationResult> RegisterWithInviteAsync(string email, Guid inviteCode, CancellationToken ct);
 
     /// <summary>
-    /// Create a new invite associated with a user for a specific email
-    /// </summary>
-    Task<Invite> CreateInviteAsync(Guid issuedByUserId, string email, CancellationToken ct);
-
-    /// <summary>
-    /// Get invites issued by a specific user with cursor pagination
-    /// </summary>
-    Task<List<Invite>> GetUserInvitesAsync(Guid userId, Guid? lastInviteId, CancellationToken ct);
-
-    /// <summary>
     /// Get user storage usage statistics (used bytes and quota bytes)
     /// </summary>
     Task<UserStorageUsageDto> GetStorageUsageAsync(Guid userId, CancellationToken ct);
