@@ -1,12 +1,12 @@
 export const en = {
   home: {
-    title: "Share secrets securely with Sharik",
-    desc: "Sharik is a fast, Zero-Knowledge PWA service. Your files and notes are encrypted right in your browser. The decryption key is never sent to the server.",
+    title: "Share secrets securely with Share It",
+    desc: "Share It is a fast, Zero-Knowledge PWA service. Your files and notes are encrypted right in your browser. The decryption key is never sent to the server.",
     createBtn: "Create Secret 🎈",
     mySecretsBtn: "My Secrets"
   },
   nav: {
-    logoText: "Sharik",
+    logoText: "Share It",
     cabinet: "My Cabinet",
     create: "Create Secret 🎈",
     logout: "Log Out",
