@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SecureStorage.Domain.Entities;
-using SecureStorage.Domain.Enums;
 using SecureStorage.Domain.Services;
 
 namespace SecureStorage.Controllers;
@@ -22,8 +21,10 @@ public class SecretsController(
     public async Task<IActionResult> CreateSecret(CancellationToken ct)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Console.WriteLine($"[SecretsController] CreateSecret: userIdStr = '{userIdStr}'");
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out Guid userId))
         {
+            Console.WriteLine("[SecretsController] CreateSecret: userIdStr is empty or not a valid Guid");
             return Unauthorized();
         }
 
@@ -38,11 +39,12 @@ public class SecretsController(
             maxRequestBodySizeFeature.MaxRequestBodySize = _appSettings.Value.MaxSecretSizeBytes;
         }
 
-        var comment = Request.Headers["X-Secret-Comment"].ToString();
-        if (string.IsNullOrEmpty(comment))
+        var commentHeader = Request.Headers["X-Secret-Comment"].ToString();
+        if (string.IsNullOrEmpty(commentHeader))
         {
             return BadRequest("(Comment) Comment hasn't been found.");
         }
+        var comment = Uri.UnescapeDataString(commentHeader);
 
         if (!bool.TryParse(Request.Headers["X-Secret-IsOneTime"], out var isOneTime))
         {
@@ -50,9 +52,13 @@ public class SecretsController(
         }
 
         var contentType = Request.Headers["X-Secret-ContentType"].ToString();
-        if (string.IsNullOrEmpty(contentType)) contentType = "application/octet-stream";
+        if (string.IsNullOrEmpty(contentType))
+        {
+            contentType = "application/octet-stream";
+        }
 
-        var fileName = Request.Headers["X-Secret-FileName"].ToString();
+        var fileNameHeader = Request.Headers["X-Secret-FileName"].ToString();
+        var fileName = string.IsNullOrEmpty(fileNameHeader) ? "" : Uri.UnescapeDataString(fileNameHeader);
         var ivBase64 = Request.Headers["X-Secret-IV"].ToString();
         if (string.IsNullOrEmpty(ivBase64))
         {
@@ -63,22 +69,10 @@ public class SecretsController(
 
         var contentStream = Request.Body;
 
-        try
-        {
-            if (!Enum.TryParse(contentType, true, out ContentType parsedContentType))
-            {
-                return BadRequest("Invalid content type.");
-            }
+        var secretId = await _secretService.CreateSecretAsync(
+            contentStream, userId, comment, isOneTime, iv, contentType, fileName, ct);
 
-            var secretId = await _secretService.CreateSecretAsync(
-                contentStream, userId, comment, isOneTime, iv, parsedContentType, fileName, ct);
-
-            return Ok(new { id = secretId });
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Unauthorized();
-        }
+        return Ok(new { id = secretId });
 
     }
 

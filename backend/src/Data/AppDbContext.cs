@@ -20,6 +20,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.ToTable("users");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Email).IsRequired().HasConversion(v => v.ToLower().Trim(), v => v);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.HasIndex(e => e.Email).IsUnique();
             entity.HasIndex(e => e.Id).IsUnique();
@@ -34,10 +35,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.IsUsed).HasDefaultValue(false);
             entity.Property(e => e.IssuedByUserId).IsRequired();
             entity.Property(e => e.UsedAt).IsRequired(false);
-            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.HasIndex(e => e.Id).IsUnique();
-            entity.HasIndex(e => e.Email).IsUnique();
+            entity.HasIndex(e => e.Email);
 
         });
 
@@ -49,11 +50,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.Comment).IsRequired();
             entity.Property(e => e.IsOneTime).IsRequired();
             entity.Property(e => e.IsBurned).IsRequired();
-            entity.Property(e => e.ContentType).IsRequired().HasConversion<string>().HasMaxLength(130);
+            entity.Property(e => e.ContentType).IsRequired().HasMaxLength(130);
             entity.Property(e => e.FileName).IsRequired();
             entity.Property(e => e.IV).IsRequired();
             entity.Property(e => e.Size).IsRequired();
-            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.ExpiresAt).IsRequired();
 
             entity.HasOne(e => e.Owner).WithMany().HasForeignKey(e => e.OwnerId).OnDelete(DeleteBehavior.Cascade);

@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SecureStorage.Data;
 using SecureStorage.Domain.Entities;
-using SecureStorage.Domain.Enums;
 
 namespace SecureStorage.Domain.Services;
 
@@ -45,11 +44,17 @@ public class SecretService(AppDbContext _dbContext, ILogger<SecretService> _logg
                                         string comment,
                                         bool isOneTime,
                                         byte[] iv,
-                                        ContentType contentType,
+                                        string contentType,
                                         string? fileName,
                                         CancellationToken ct)
     {
-        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == ownerId, ct) ?? throw new UnauthorizedAccessException("The user not found");
+        Console.WriteLine($"[SecretService] CreateSecretAsync: ownerId = '{ownerId}'");
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == ownerId, ct);
+        if (user == null)
+        {
+            Console.WriteLine($"[SecretService] CreateSecretAsync: User '{ownerId}' not found in database!");
+            throw new InvalidOperationException("The user not found");
+        }
         var secretId = Guid.CreateVersion7();
         var now = DateTime.UtcNow;
         var secret = new Secret
@@ -73,11 +78,11 @@ public class SecretService(AppDbContext _dbContext, ILogger<SecretService> _logg
         }
 
         var filePath = Path.Combine(storagePath, secretId.ToString());
-        secret.Size = contentStream.Length;
         using (var fileStream = File.Create(filePath))
         {
             await contentStream.CopyToAsync(fileStream, ct);
         }
+        secret.Size = new FileInfo(filePath).Length;
 
         _dbContext.Secrets.Add(secret);
         await _dbContext.SaveChangesAsync(ct);
@@ -153,6 +158,7 @@ public class SecretService(AppDbContext _dbContext, ILogger<SecretService> _logg
                 s.Id,
                 s.Comment,
                 s.IsOneTime,
+                s.Size,
                 s.CreatedAt
             ))
             .ToListAsync(ct);
@@ -216,9 +222,21 @@ public class SecretService(AppDbContext _dbContext, ILogger<SecretService> _logg
         }
 
         // 3. Delete records from database
-        var deletedRows = await _dbContext.Secrets
-            .Where(s => secretsToDelete.Contains(s.Id))
-            .ExecuteDeleteAsync(ct);
+        int deletedRows;
+        if (_dbContext.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            var secrets = await _dbContext.Secrets
+                .Where(s => secretsToDelete.Contains(s.Id))
+                .ToListAsync(ct);
+            _dbContext.Secrets.RemoveRange(secrets);
+            deletedRows = await _dbContext.SaveChangesAsync(ct);
+        }
+        else
+        {
+            deletedRows = await _dbContext.Secrets
+                .Where(s => secretsToDelete.Contains(s.Id))
+                .ExecuteDeleteAsync(ct);
+        }
 
         return deletedRows;
     }

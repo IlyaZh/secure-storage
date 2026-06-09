@@ -19,10 +19,14 @@ USER root
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/*
-USER $APP_UID
 
 # Copy the published output from the build stage
 COPY --from=build /app/publish .
+
+# Create Storage directory and make the /app folder writable by the non-root app user
+RUN mkdir -p /app/Storage && chown -R $APP_UID:$APP_UID /app
+
+USER $APP_UID
 
 # Expose port 8080 (ASP.NET Core 8.0/9.0 default port for non-root containers)
 EXPOSE 8080

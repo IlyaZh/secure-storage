@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SecureStorage.Domain.Entities;
+using SecureStorage.Domain.Enums;
 using SecureStorage.Domain.Services;
 
 namespace SecureStorage.Controllers;
@@ -25,7 +26,7 @@ public class AuthController(
     /// <returns>A challenge result that redirects the user to the Google authentication provider.</returns>
     [HttpGet("login")]
     public IActionResult Login(
-        [FromQuery] Guid? inviteCode
+        [FromQuery] string? inviteCode
     )
     {
         var properties = new AuthenticationProperties
@@ -33,13 +34,16 @@ public class AuthController(
             RedirectUri = Url.Action(nameof(Callback))
         };
 
-        if (inviteCode.HasValue)
+        if (!string.IsNullOrEmpty(inviteCode))
         {
-            properties.Items.Add("inviteCode", inviteCode.Value.ToString());
+            if (!Guid.TryParse(inviteCode, out var inviteCodeGuid) || inviteCodeGuid == Guid.Empty)
+            {
+                return Redirect($"{_appSettings.Value.FrontendUrl}/#/login?error=invite_invalid");
+            }
+            properties.Items.Add("inviteCode", inviteCodeGuid.ToString());
         }
 
         return Challenge(properties, GoogleDefaults.AuthenticationScheme);
-
     }
 
     /// <summary>
@@ -55,14 +59,14 @@ public class AuthController(
 
         if (!authenticateResult.Succeeded)
         {
-            return BadRequest("Authentication failed");
+            return Redirect($"{_appSettings.Value.FrontendUrl}/#/login?error=auth_failed");
         }
 
         var email = authenticateResult.Principal?.FindFirstValue(ClaimTypes.Email);
 
         if (string.IsNullOrEmpty(email))
         {
-            return BadRequest("Cannot get email from Google");
+            return Redirect($"{_appSettings.Value.FrontendUrl}/#/login?error=email_missing");
         }
 
         var user = await _userService.GetByEmailAsync(email, ct);
@@ -72,21 +76,37 @@ public class AuthController(
             if (string.IsNullOrEmpty(inviteCodeStr) || !Guid.TryParse(inviteCodeStr, out var inviteCode) || inviteCode == Guid.Empty)
             {
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied. Registration only by invites." });
+                return Redirect($"{_appSettings.Value.FrontendUrl}/#/auth-error?reason=no_account");
             }
 
-            var registrationSuccess = await _userService.RegisterWithInviteAsync(email, inviteCode, ct);
-            if (!registrationSuccess)
+            var registrationResult = await _userService.RegisterWithInviteAsync(email, inviteCode, ct);
+            if (registrationResult != RegistrationResult.Success)
             {
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                return StatusCode(StatusCodes.Status403Forbidden, new { error = "Registration failed. The invite might be invalid or already used." });
+                var errParam = registrationResult switch
+                {
+                    RegistrationResult.EmailMismatch => "email_mismatch",
+                    RegistrationResult.AlreadyRegistered => "already_registered",
+                    _ => "invite_invalid"
+                };
+                return Redirect($"{_appSettings.Value.FrontendUrl}/#/register?error={errParam}");
             }
+
+            user = await _userService.GetByEmailAsync(email, ct);
         }
 
         var claims = new List<Claim>{
             new(ClaimTypes.Email, user!.Email),
             new(ClaimTypes.NameIdentifier, user!.Id.ToString())
         };
+
+        // Hardcoded user groups/roles (empty list by default)
+        var userGroups = new List<string> { }; 
+        foreach (var group in userGroups)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, group));
+        }
+
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
@@ -110,7 +130,7 @@ public class AuthController(
     /// Returns the authentication status and details of the currently logged-in user.
     /// </summary>
     [HttpGet("me")]
-    public IActionResult GetCurrentUser()
+    public async Task<IActionResult> GetCurrentUser(CancellationToken ct)
     {
         if (User.Identity == null || !User.Identity.IsAuthenticated)
         {
@@ -118,13 +138,21 @@ public class AuthController(
         }
 
         var email = User.FindFirstValue(ClaimTypes.Email);
-        var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(idStr) || !Guid.TryParse(idStr, out Guid userId))
+        {
+            return Ok(new { isAuthenticated = false });
+        }
+
+        var usage = await _userService.GetStorageUsageAsync(userId, ct);
 
         return Ok(new
         {
             isAuthenticated = true,
             email,
-            id
+            id = idStr,
+            usedBytes = usage.UsedBytes,
+            quotaBytes = usage.QuotaBytes
         });
     }
 }

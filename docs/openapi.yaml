@@ -21,19 +21,33 @@ paths:
             format: uuid
       responses:
         '302':
-          description: Redirect to Google OAuth page.
+          description: Redirects to the Google OAuth consent page on success, or to the frontend login page with an error code if the invite code is invalid.
+          headers:
+            Location:
+              schema:
+                type: string
+              description: Google OAuth challenge URL, or frontend URL (e.g. `{frontendUrl}/#/login?error=invite_invalid`).
 
   /api/auth/callback:
     get:
       summary: OAuth Callback Endpoint
-      description: Handles the callback from Google, authenticates the user, and redirects back to the frontend.
+      description: Handles the callback from Google, authenticates the user, registers them if they have a valid matching invite, and redirects back to the frontend.
       responses:
         '302':
           description: Redirects to the configured Frontend URL.
-        '400':
-          description: Authentication failed or email cannot be retrieved.
-        '403':
-          description: Registration failed (invalid invite code).
+          headers:
+            Location:
+              schema:
+                type: string
+              description: >
+                Redirect URL on the frontend. Possible values:
+                - `{frontendUrl}/` (Successful authentication/registration)
+                - `{frontendUrl}/#/login?error=auth_failed` (Google authentication failed)
+                - `{frontendUrl}/#/login?error=email_missing` (Google account has no email claim)
+                - `{frontendUrl}/#/auth-error?reason=no_account` (User does not exist and no invite code was supplied)
+                - `{frontendUrl}/#/register?error=email_mismatch` (Email doesn't match the invite)
+                - `{frontendUrl}/#/register?error=already_registered` (Invite email is already registered)
+                - `{frontendUrl}/#/register?error=invite_invalid` (Invite is invalid or already used)
 
   /api/auth/logout:
     get:
@@ -65,6 +79,75 @@ paths:
                     format: uuid
                     nullable: true
 
+  /api/invites:
+    post:
+      summary: Create a New Invite
+      description: Generates a new invite code for a specific target email. Only accessible to authenticated users.
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: The email address of the invitee.
+      responses:
+        '200':
+          description: Invite created successfully. Returns the unique invite code.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    format: uuid
+                    description: The generated invite code.
+        '400':
+          description: Invalid request. Returned when email is missing, target user is already registered, or an active invite already exists for this email.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Specific validation error message.
+        '401':
+          description: Unauthorized. Current user session is invalid or missing.
+
+    get:
+      summary: Get User's Issued Invites
+      description: Retrieves a cursor-paginated list of invites issued by the currently authenticated user.
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: lastInviteId
+          in: query
+          description: Cursor ID (Guid v7) of the last invite from the previous page for pagination.
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of invites issued by the user.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InviteDto'
+        '401':
+          description: Unauthorized. Current user session is invalid or missing.
+
   /api/secrets:
     post:
       summary: Create a New Secret
@@ -74,7 +157,7 @@ paths:
       parameters:
         - name: X-Secret-Comment
           in: header
-          description: Description or comment for the secret.
+          description: Description or comment for the secret. Must be percent-encoded (URL-encoded) to support non-ASCII characters.
           required: true
           schema:
             type: string
@@ -87,14 +170,14 @@ paths:
             default: false
         - name: X-Secret-ContentType
           in: header
-          description: The MIME content type of the secret payload.
+          description: The standard MIME content type of the secret payload (e.g., text/plain, application/pdf, image/png). Defaults to application/octet-stream if missing.
           required: false
           schema:
             type: string
             default: application/octet-stream
         - name: X-Secret-FileName
           in: header
-          description: The optional original file name if a file is being uploaded.
+          description: The optional original file name if a file is being uploaded. Must be percent-encoded (URL-encoded) to support non-ASCII characters.
           required: false
           schema:
             type: string
@@ -234,3 +317,29 @@ components:
         createdAt:
           type: string
           format: date-time
+    InviteDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the invite.
+        email:
+          type: string
+          description: Email address of the invitee.
+        isUsed:
+          type: boolean
+          description: Whether the invite has been used.
+        issuedByUserId:
+          type: string
+          format: uuid
+          description: The ID of the user who issued the invite.
+        usedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: The date and time when the invite was used.
+        createdAt:
+          type: string
+          format: date-time
+          description: The date and time when the invite was created.

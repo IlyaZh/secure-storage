@@ -2,14 +2,15 @@ using Microsoft.Extensions.Options;
 using SecureStorage.Data;
 using SecureStorage.Domain.Entities;
 using SecureStorage.Domain.Services;
+using SecureStorage.Domain.Settings;
 
 
 namespace SecureStorage.BackgroundServices;
 
-public class CleanupWorker(
+public class SecretsCleanupWorker(
     IServiceScopeFactory _scopeFactory,
-    ILogger<CleanupWorker> _logger,
-    IOptions<CleanupWorkerSettings> _settings
+    ILogger<SecretsCleanupWorker> _logger,
+    IOptions<SecretsCleanupWorkerSettings> _settings
 ) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

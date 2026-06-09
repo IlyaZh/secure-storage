@@ -1,5 +1,3 @@
-using SecureStorage.Domain.Enums;
-
 namespace SecureStorage.Domain.Services;
 
 /// <summary>
@@ -28,7 +26,7 @@ public interface ISecretService
                                  string comment,
                                  bool isOneTime,
                                  byte[] iv,
-                                 ContentType contentType,
+                                 string contentType,
                                  string? fileName,
                                  CancellationToken ct);
 
@@ -86,7 +84,7 @@ public interface ISecretService
 public record SecretDto(
     byte[] EncryptedData,
     byte[] IV,
-    ContentType ContentType,
+    string ContentType,
     string? FileName,
     bool IsOneTime
 );
@@ -98,5 +96,6 @@ public record SecretSummaryDto(
     Guid Id,
     string? Comment,
     bool IsOneTime,
+    long Size,
     DateTime CreatedAt
 );

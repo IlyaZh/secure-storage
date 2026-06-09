@@ -1,2 +1,66 @@
-hi
+<!DOCTYPE html>
+<html lang="ru">
 
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Шарик - Безопасный обмен секретами 🎈</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎈</text></svg>">
+
+  <!-- SEO Meta Tags -->
+  <meta name="description"
+    content="Шарик — это безопасный PWA-сервис с нулевым разглашением информации (Zero-Knowledge). Делитесь зашифрованными паролями и секретными файлами без риска утечки.">
+
+  <!-- PWA & Apple Web App Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6c5ce7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Шарик">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <!-- Application Stylesheets -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- Background decorative floating balloon gradients -->
+  <div class="bg-decorations">
+    <div class="balloon balloon-1"></div>
+    <div class="balloon balloon-2"></div>
+    <div class="balloon balloon-3"></div>
+  </div>
+
+  <!-- Toast Notifier Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Header Navigation -->
+  <header>
+    <a href="#/" class="logo-container">
+      <span class="logo-icon">🎈</span>
+      <span id="logo-text" class="logo-text">Шарик</span>
+    </a>
+    <div class="nav-links" id="nav-links">
+      <!-- Generated dynamically based on Auth State in app.js -->
+    </div>
+  </header>
+
+  <!-- SPA Target View Port -->
+  <main id="app">
+    <!-- Rendered dynamically by hash router in app.js -->
+  </main>
+
+  <!-- Load Configuration & Application Scripts -->
+  <script src="config.js"></script>
+  <script type="module" src="src/app.js"></script>
+</body>
+
+</html>

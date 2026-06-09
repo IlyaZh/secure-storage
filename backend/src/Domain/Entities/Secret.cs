@@ -1,4 +1,3 @@
-using SecureStorage.Domain.Enums;
 
 namespace SecureStorage.Domain.Entities;
 
@@ -9,7 +8,7 @@ public class Secret
     public string Comment { get; set; } = string.Empty;
     public bool IsOneTime { get; set; } = false;
     public bool IsBurned { get; set; } = false;
-    public ContentType ContentType { get; set; } = ContentType.TextPlain;
+    public string ContentType { get; set; } = "text/plain";
     public string? FileName { get; set; }
     public byte[] IV { get; set; } = Array.Empty<byte>();
     public long Size { get; set; } = 0;

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SecureStorage.Data;
 using SecureStorage.Domain.Entities;
+using SecureStorage.Domain.Enums;
 
 namespace SecureStorage.Domain.Services;
 
@@ -11,6 +12,7 @@ public class UserService(
     AppDbContext _dbContext
 ) : IUserService
 {
+    private const long QuotaBytes = 200L * 1024 * 1024;
     /// <summary>
     /// Get user by email
     /// 
@@ -41,38 +43,65 @@ public class UserService(
     /// - False if the user was not registered successfully
     /// 
     /// </summary>
-    public async Task<bool> RegisterWithInviteAsync(string email, Guid inviteCode, CancellationToken ct)
+    public async Task<RegistrationResult> RegisterWithInviteAsync(string email, Guid inviteCode, CancellationToken ct)
     {
         var normalizedEmail = email.ToLower().Trim();
 
-        using var transaction = await _dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+        var isInMemory = _dbContext.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory";
+        using var transaction = isInMemory ? null : await _dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         try
         {
             var userExists = await _dbContext.Users.AnyAsync(u => u.Email == normalizedEmail, ct);
             if (userExists)
-                return false;
+                return RegistrationResult.AlreadyRegistered;
 
             var invite = await _dbContext.Invites.FirstOrDefaultAsync(inv => inv.Id == inviteCode && !inv.IsUsed, ct);
             if (invite == null)
             {
-                return false;
+                return RegistrationResult.InviteNotFoundOrUsed;
+            }
+
+            if (invite.Email != normalizedEmail)
+            {
+                return RegistrationResult.EmailMismatch;
             }
 
             invite.IsUsed = true;
-            invite.Email = normalizedEmail;
+            invite.UsedAt = DateTime.UtcNow;
 
             var newUser = new User { Id = Guid.CreateVersion7(), Email = normalizedEmail, CreatedAt = DateTime.UtcNow };
 
             _dbContext.Users.Add(newUser);
             await _dbContext.SaveChangesAsync(ct);
 
-            await transaction.CommitAsync(ct);
-            return true;
+            if (transaction != null)
+            {
+                await transaction.CommitAsync(ct);
+            }
+            return RegistrationResult.Success;
         }
         catch
         {
-            await transaction.RollbackAsync(ct);
+            if (transaction != null)
+            {
+                await transaction.RollbackAsync(ct);
+            }
             throw;
         }
+    }
+
+    /// <summary>
+    /// Get user storage usage statistics (used bytes and quota bytes)
+    /// </summary>
+    public async Task<UserStorageUsageDto> GetStorageUsageAsync(Guid userId, CancellationToken ct)
+    {
+        var query = _dbContext.Secrets
+            .Where(s => s.OwnerId == userId && !s.IsBurned && s.ExpiresAt > DateTime.UtcNow);
+
+        var usedBytes = await query.AnyAsync(ct)
+            ? await query.SumAsync(s => s.Size, ct)
+            : 0L;
+
+        return new UserStorageUsageDto(usedBytes, QuotaBytes);
     }
 }
