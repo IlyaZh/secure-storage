@@ -1,6 +1,6 @@
-# Secure Storage 🔒
+# ShareIt (Шарик) 🔒
 
-A secure, self-hosted secret-sharing platform designed for sharing encrypted notes, credentials, and files. The project supports features such as one-time view secrets (burn-on-read), auto-expiration, and an invite-only registration system.
+ShareIt (Шарик) is a secure, self-hosted secret-sharing platform designed for sharing encrypted notes, credentials, and files. The project supports features such as one-time view secrets (burn-on-read), auto-expiration, and an invite-only registration system.
 
 ## 🚀 Features
 
