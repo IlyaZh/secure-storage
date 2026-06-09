@@ -68,13 +68,22 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Extract Docker metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ steps.prep.outputs.owner }}/secure-storage-backend
+        tags: |
+          type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix=,format=long
+
     - name: Build and Push Backend Docker Image
       uses: docker/build-push-action@v7
       with:
         context: ./backend
         file: ./backend/Dockerfile
         push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
-        tags: |
-          ghcr.io/${{ steps.prep.outputs.owner }}/secure-storage-backend:latest
-          ghcr.io/${{ steps.prep.outputs.owner }}/secure-storage-backend:${{ github.ref_name }}
-          ghcr.io/${{ steps.prep.outputs.owner }}/secure-storage-backend:${{ github.sha }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
