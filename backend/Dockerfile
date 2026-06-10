@@ -17,7 +17,7 @@ WORKDIR /app
 # Switch to root to install curl for health checks, then revert to the default non-root user
 USER root
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl && \
+    apt-get install -y --no-install-recommends curl wget && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the published output from the build stage
