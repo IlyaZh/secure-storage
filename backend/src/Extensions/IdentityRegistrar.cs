@@ -28,7 +28,8 @@ public static class IdentityRegistrar
         .AddCookie(options =>
         {
             options.Cookie.SameSite = SameSiteMode.Lax;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.Domain = ".shareit.zoidberg.cc";
         })
         .AddGoogle(googleOptions =>
         {
