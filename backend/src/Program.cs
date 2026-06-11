@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using SecureStorage.Extensions;
 using SecureStorage.Middleware;
@@ -21,6 +22,13 @@ builder.RegisterApplicationServices();
 builder.ConfigureFeatureFlags();
 
 var app = builder.Build();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    KnownNetworks = { },
+    KnownProxies = { }
+});
 
 app.UseConfiguredLogging();
 app.UseRouting();
