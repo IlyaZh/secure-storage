@@ -19,7 +19,9 @@ const ASSETS = [
   './src/views/login.js',
   './src/views/create.js',
   './src/views/dashboard.js',
-  './src/views/secret.js'
+  './src/views/secret.js',
+  './screenshot-desktop.png',
+  './screenshot-mobile.png'
 ];
 
 // Install Event
