@@ -23,21 +23,6 @@ builder.ConfigureFeatureFlags();
 
 var app = builder.Build();
 
-// Debug middleware to inspect headers from Traefik
-app.Use(async (context, next) =>
-{
-    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-    var forwardedProto = context.Request.Headers["X-Forwarded-Proto"].ToString();
-    var forwardedFor = context.Request.Headers["X-Forwarded-For"].ToString();
-    
-    logger.LogInformation("[ProxyDebug] BEFORE: Scheme={Scheme}, X-Forwarded-Proto='{Proto}', X-Forwarded-For='{For}'", 
-        context.Request.Scheme, forwardedProto, forwardedFor);
-
-    await next();
-
-    logger.LogInformation("[ProxyDebug] AFTER: Scheme={Scheme}", context.Request.Scheme);
-});
-
 app.UseForwardedHeaders();
 
 app.UseConfiguredLogging();
