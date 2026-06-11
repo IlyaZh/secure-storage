@@ -48,46 +48,62 @@ public class UserService(
         var normalizedEmail = email.ToLower().Trim();
 
         var isInMemory = _dbContext.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory";
-        using var transaction = isInMemory ? null : await _dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
-        try
+        if (isInMemory)
         {
-            var userExists = await _dbContext.Users.AnyAsync(u => u.Email == normalizedEmail, ct);
-            if (userExists)
-                return RegistrationResult.AlreadyRegistered;
-
-            var invite = await _dbContext.Invites.FirstOrDefaultAsync(inv => inv.Id == inviteCode && !inv.IsUsed, ct);
-            if (invite == null)
-            {
-                return RegistrationResult.InviteNotFoundOrUsed;
-            }
-
-            if (invite.Email != normalizedEmail)
-            {
-                return RegistrationResult.EmailMismatch;
-            }
-
-            invite.IsUsed = true;
-            invite.UsedAt = DateTime.UtcNow;
-
-            var newUser = new User { Id = Guid.CreateVersion7(), Email = normalizedEmail, CreatedAt = DateTime.UtcNow };
-
-            _dbContext.Users.Add(newUser);
-            await _dbContext.SaveChangesAsync(ct);
-
-            if (transaction != null)
-            {
-                await transaction.CommitAsync(ct);
-            }
-            return RegistrationResult.Success;
+            return await ExecuteRegistrationLogicAsync(normalizedEmail, inviteCode, ct);
         }
-        catch
+
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
-            if (transaction != null)
+            using var transaction = await _dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+            try
+            {
+                var result = await ExecuteRegistrationLogicAsync(normalizedEmail, inviteCode, ct);
+                if (result == RegistrationResult.Success)
+                {
+                    await transaction.CommitAsync(ct);
+                }
+                else
+                {
+                    await transaction.RollbackAsync(ct);
+                }
+                return result;
+            }
+            catch
             {
                 await transaction.RollbackAsync(ct);
+                throw;
             }
-            throw;
+        });
+    }
+
+    private async Task<RegistrationResult> ExecuteRegistrationLogicAsync(string normalizedEmail, Guid inviteCode, CancellationToken ct)
+    {
+        var userExists = await _dbContext.Users.AnyAsync(u => u.Email == normalizedEmail, ct);
+        if (userExists)
+            return RegistrationResult.AlreadyRegistered;
+
+        var invite = await _dbContext.Invites.FirstOrDefaultAsync(inv => inv.Id == inviteCode && !inv.IsUsed, ct);
+        if (invite == null)
+        {
+            return RegistrationResult.InviteNotFoundOrUsed;
         }
+
+        if (invite.Email != normalizedEmail)
+        {
+            return RegistrationResult.EmailMismatch;
+        }
+
+        invite.IsUsed = true;
+        invite.UsedAt = DateTime.UtcNow;
+
+        var newUser = new User { Id = Guid.CreateVersion7(), Email = normalizedEmail, CreatedAt = DateTime.UtcNow };
+
+        _dbContext.Users.Add(newUser);
+        await _dbContext.SaveChangesAsync(ct);
+
+        return RegistrationResult.Success;
     }
 
     /// <summary>

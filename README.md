@@ -86,7 +86,7 @@ Since registration is invite-only, you must bootstrap the database with a first 
 
 2. Generate a UUIDv7 (e.g. `01900bf4-b05b-7b00-843c-8a18c515e06d`) and insert an invite record specifying your target Google account email address:
    ```sql
-   INSERT INTO invites (id, email, is_used, issued_by_user_id, created_at)
+   INSERT INTO invites (Id, Email, IsUsed, IssuedByUserId, CreatedAt)
    VALUES ('01900bf4-b05b-7b00-843c-8a18c515e06d', 'your-email@gmail.com', 0, '00000000-0000-0000-0000-000000000000', NOW());
    ```
 
