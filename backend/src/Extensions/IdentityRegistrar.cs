@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using SecureStorage.Domain.Settings;
+using SecureStorage.Domain.Entities;
 
 namespace SecureStorage.Extensions;
 
@@ -20,6 +21,8 @@ public static class IdentityRegistrar
         });
 
         var googleConfig = configuration.GetSection("Authentication:Google").Get<GoogleAuthentificationSettings>() ?? throw new InvalidOperationException("Authentication:Google not found.");
+        var appSettings = configuration.GetSection("AppSettings").Get<AppSettings>();
+
         builder.Services.AddAuthentication(options =>
         {
             options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -28,8 +31,18 @@ public static class IdentityRegistrar
         .AddCookie(options =>
         {
             options.Cookie.SameSite = SameSiteMode.Lax;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-            options.Cookie.Domain = ".shareit.zoidberg.cc";
+            if (builder.Environment.IsDevelopment())
+            {
+                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+            }
+            else
+            {
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                if (!string.IsNullOrEmpty(appSettings?.CookieDomain))
+                {
+                    options.Cookie.Domain = appSettings.CookieDomain;
+                }
+            }
         })
         .AddGoogle(googleOptions =>
         {
