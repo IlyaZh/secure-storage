@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using SecureStorage.BackgroundServices;
 using SecureStorage.Data;
@@ -11,6 +12,13 @@ public static class ServiceRegistrar
 {
     public static void RegisterApplicationServices(this WebApplicationBuilder builder)
     {
+        builder.Services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
+        });
+
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<ISecretService, SecretService>();
         builder.Services.AddScoped<IInvitesService, InvitesService>();
