@@ -36,6 +36,19 @@ public static class IdentityRegistrar
             googleOptions.ClientId = googleConfig.ClientId;
             googleOptions.ClientSecret = googleConfig.ClientSecret;
             googleOptions.CallbackPath = "/signin-google";
+            googleOptions.Events = new Microsoft.AspNetCore.Authentication.OAuth.OAuthEvents
+            {
+                OnRedirectToAuthorizationEndpoint = context =>
+                {
+                    var redirectUri = context.RedirectUri;
+                    if (redirectUri.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+                    {
+                        redirectUri = redirectUri.Replace("http://", "https://", StringComparison.OrdinalIgnoreCase);
+                    }
+                    context.Response.Redirect(redirectUri);
+                    return Task.CompletedTask;
+                }
+            };
         });
 
     }
