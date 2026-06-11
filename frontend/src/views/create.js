@@ -19,8 +19,11 @@ export function renderCreateSecret() {
       
       <div class="form-group">
         <label class="checkbox-label">
-          <input type="checkbox" id="is-file-checkbox" class="checkbox-input">
-          ${t('create.checkboxFile')}
+          <span>${t('create.checkboxFile')}</span>
+          <div class="checkbox-input-wrapper">
+            <input type="checkbox" id="is-file-checkbox" class="checkbox-input">
+            <div class="toggle-slider"></div>
+          </div>
         </label>
       </div>
 
@@ -45,10 +48,13 @@ export function renderCreateSecret() {
         <input class="form-input" type="text" id="secret-comment" placeholder="${t('create.commentPlaceholder')}">
       </div>
 
-      <div class="form-group" style="display:flex; gap: 2rem;">
+      <div class="form-group">
         <label class="checkbox-label">
-          <input type="checkbox" id="secret-onetime" class="checkbox-input" checked>
-          ${t('create.onetimeLabel')}
+          <span>${t('create.onetimeLabel')}</span>
+          <div class="checkbox-input-wrapper">
+            <input type="checkbox" id="secret-onetime" class="checkbox-input" checked>
+            <div class="toggle-slider"></div>
+          </div>
         </label>
       </div>
 

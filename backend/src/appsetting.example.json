@@ -1,0 +1,61 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "AppSettings": {
+    "FrontendUrl": "http://localhost:3005",
+    "CookieDomain": "",
+    "MaxSecretSizeBytes": 15728640
+  },
+  "ConnectionStrings": {
+    "Database": "Server=localhost;Port=3306;Database=secure_storage;Uid=root;Pwd=YOUR_DB_PASSWORD;"
+  },
+  "Database": {
+    "Retries": {
+      "MaxCount": 10,
+      "DelayMs": 5000
+    }
+  },
+  "Authentication": {
+    "Google": {
+      "ClientId": "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
+      "ClientSecret": "YOUR_GOOGLE_CLIENT_SECRET"
+    }
+  },
+  "SecretsCleanupWorker": {
+    "PeriodSeconds": 900,
+    "BatchSize": 1000,
+    "BatchDelayMilliseconds": 1000
+  },
+  "InvitesCleanupWorker": {
+    "PeriodSeconds": 900,
+    "BatchSize": 1000,
+    "BatchDelayMilliseconds": 1000,
+    "TTLh": 120
+  },
+  "Serilog": {
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Warning",
+        "Microsoft.Hosting.Lifetime": "Information"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] [{TraceId}] {Message:lj}{NewLine}{Exception}"
+        }
+      }
+    ],
+    "Enrich": [
+      "FromLogContext"
+    ]
+  },
+  "FeatureManagement": {}
+}

@@ -87,6 +87,37 @@ export function updateNavUI() {
       setLanguage(nextLang);
     };
   }
+
+  // Setup Mobile Burger Toggle
+  const burgerBtn = document.getElementById('burger-menu-btn');
+  if (burgerBtn) {
+    // Reset active states on redraw
+    burgerBtn.classList.remove('active');
+    navContainer.classList.remove('open');
+    
+    burgerBtn.onclick = (e) => {
+      e.stopPropagation();
+      burgerBtn.classList.toggle('active');
+      navContainer.classList.toggle('open');
+    };
+
+    // Close menu when clicking anywhere else on page
+    document.addEventListener('click', (e) => {
+      if (!navContainer.contains(e.target) && e.target !== burgerBtn) {
+        burgerBtn.classList.remove('active');
+        navContainer.classList.remove('open');
+      }
+    }, { once: false });
+  }
+
+  // Auto-close menu when clicking any nav link
+  const navLinksList = navContainer.querySelectorAll('.nav-btn');
+  navLinksList.forEach(link => {
+    link.addEventListener('click', () => {
+      if (burgerBtn) burgerBtn.classList.remove('active');
+      navContainer.classList.remove('open');
+    });
+  });
 }
 
 export async function logout() {
