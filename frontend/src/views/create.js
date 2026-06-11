@@ -161,7 +161,13 @@ async function submitSecret() {
     document.getElementById('result-link-text').innerText = secretLink;
     document.getElementById('result-link-area').style.display = 'block';
     
-    showToast(t('toast.createSuccess'), "success");
+    // Auto-copy link to clipboard upon creation
+    try {
+      await navigator.clipboard.writeText(secretLink);
+      showToast(t('toast.createSuccessAndCopied') || "Секрет создан и скопирован!", "success");
+    } catch (err) {
+      showToast(t('toast.createSuccess') || "Секрет создан!", "success");
+    }
     
     document.getElementById('copy-result-link-btn').onclick = () => {
       navigator.clipboard.writeText(secretLink);
