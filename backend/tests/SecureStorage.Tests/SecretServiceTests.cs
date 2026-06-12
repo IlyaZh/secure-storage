@@ -150,7 +150,7 @@ public class SecretServiceTests : IDisposable
         var service = new SecretService(context, logger);
 
         // Act
-        var result = await service.GetSecretAsync(secretId, CancellationToken.None);
+        var result = await service.GetSecretAsync(secretId, null, CancellationToken.None);
 
         // Assert
         Assert.NotNull(result);
@@ -213,8 +213,8 @@ public class SecretServiceTests : IDisposable
         var service = new SecretService(context, logger);
 
         // Act & Assert
-        Assert.Null(await service.GetSecretAsync(expiredSecretId, CancellationToken.None));
-        Assert.Null(await service.GetSecretAsync(burnedSecretId, CancellationToken.None));
+        Assert.Null(await service.GetSecretAsync(expiredSecretId, null, CancellationToken.None));
+        Assert.Null(await service.GetSecretAsync(burnedSecretId, null, CancellationToken.None));
     }
 
     [Fact]
@@ -322,5 +322,98 @@ public class SecretServiceTests : IDisposable
 
         Assert.Null(await context.Secrets.FindAsync(expiredSecretId1));
         Assert.NotNull(await context.Secrets.FindAsync(activeSecretId));
+    }
+
+    [Fact]
+    public async Task GetSecretAsync_ShouldNotBurnOneTimeSecret_WhenAccessedByOwner()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var ownerId = Guid.NewGuid();
+        var user = new User { Id = ownerId, Email = "owner@example.com", CreatedAt = DateTime.UtcNow };
+        context.Users.Add(user);
+
+        var secretId = Guid.NewGuid();
+        var secret = new Secret
+        {
+            Id = secretId,
+            OwnerId = ownerId,
+            Comment = "One Time",
+            IsOneTime = true,
+            IsBurned = false,
+            ContentType = "text/plain",
+            FileName = "test.txt",
+            IV = new byte[] { 1, 2, 3 },
+            Size = 4,
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddHours(1)
+        };
+        context.Secrets.Add(secret);
+        await context.SaveChangesAsync();
+
+        var folder = Path.Combine(Directory.GetCurrentDirectory(), "Storage");
+        Directory.CreateDirectory(folder);
+        await File.WriteAllTextAsync(Path.Combine(folder, secretId.ToString()), "TestData");
+
+        var logger = NullLogger<SecretService>.Instance;
+        var service = new SecretService(context, logger);
+
+        // Act - accessed by OWNER
+        var result = await service.GetSecretAsync(secretId, ownerId, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        
+        // Should NOT be marked as Burned in Database
+        var updatedSecret = await context.Secrets.FindAsync(secretId);
+        Assert.NotNull(updatedSecret);
+        Assert.False(updatedSecret.IsBurned);
+    }
+
+    [Fact]
+    public async Task GetSecretAsync_ShouldBurnOneTimeSecret_WhenAccessedBySomeoneElse()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var ownerId = Guid.NewGuid();
+        var strangerId = Guid.NewGuid();
+        var user = new User { Id = ownerId, Email = "owner@example.com", CreatedAt = DateTime.UtcNow };
+        context.Users.Add(user);
+
+        var secretId = Guid.NewGuid();
+        var secret = new Secret
+        {
+            Id = secretId,
+            OwnerId = ownerId,
+            Comment = "One Time",
+            IsOneTime = true,
+            IsBurned = false,
+            ContentType = "text/plain",
+            FileName = "test.txt",
+            IV = new byte[] { 1, 2, 3 },
+            Size = 4,
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddHours(1)
+        };
+        context.Secrets.Add(secret);
+        await context.SaveChangesAsync();
+
+        var folder = Path.Combine(Directory.GetCurrentDirectory(), "Storage");
+        Directory.CreateDirectory(folder);
+        await File.WriteAllTextAsync(Path.Combine(folder, secretId.ToString()), "TestData");
+
+        var logger = NullLogger<SecretService>.Instance;
+        var service = new SecretService(context, logger);
+
+        // Act - accessed by stranger (another user id)
+        var result = await service.GetSecretAsync(secretId, strangerId, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        
+        // Should BE marked as Burned in Database
+        var updatedSecret = await context.Secrets.FindAsync(secretId);
+        Assert.NotNull(updatedSecret);
+        Assert.True(updatedSecret.IsBurned);
     }
 }
