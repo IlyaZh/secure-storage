@@ -13,7 +13,7 @@ namespace SecureStorage.Controllers;
 [Route("api/secrets")]
 public class SecretsController(
     ISecretService _secretService,
-    IOptions<AppSettings> _appSettings
+    IOptionsSnapshot<AppSettings> _appSettings
 ) : ControllerBase
 {
     [HttpPost]

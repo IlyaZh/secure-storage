@@ -14,7 +14,7 @@ namespace SecureStorage.Controllers;
 [Route("api/auth")]
 public class AuthController(
     IUserService _userService,
-    IOptions<AppSettings> _appSettings
+    IOptionsSnapshot<AppSettings> _appSettings
 ) : ControllerBase
 {
     /// <summary>

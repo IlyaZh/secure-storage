@@ -10,13 +10,13 @@ namespace SecureStorage.BackgroundServices;
 public class InvitesCleanupWorker(
     IServiceScopeFactory _scopeFactory,
     ILogger<InvitesCleanupWorker> _logger,
-    IOptions<InvitesCleanupWorkerSettings> _settings
+    IOptionsMonitor<InvitesCleanupWorkerSettings> _settings
 ) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("[CleanupExpiredInvitesWorker] started.");
-        using var timer = new PeriodicTimer(_settings.Value.Period);
+        using var timer = new PeriodicTimer(_settings.CurrentValue.Period);
 
         while (!stoppingToken.IsCancellationRequested
                && await timer.WaitForNextTickAsync(stoppingToken))
@@ -30,18 +30,18 @@ public class InvitesCleanupWorker(
                     using var scope = _scopeFactory.CreateScope();
                     var Inviteservice = scope.ServiceProvider.GetRequiredService<IInvitesService>();
 
-                    var deletedCount = await Inviteservice.CleanupExpiredInvitesBatchAsync(_settings.Value.BatchSize, stoppingToken);
+                    var deletedCount = await Inviteservice.CleanupExpiredInvitesBatchAsync(_settings.CurrentValue.BatchSize, stoppingToken);
 
                     _logger.LogInformation("[CleanupExpiredInvitesWorker] Deleted {count} Invites in this batch.", deletedCount);
 
-                    if (deletedCount < _settings.Value.BatchSize)
+                    if (deletedCount < _settings.CurrentValue.BatchSize)
                     {
                         break;
                     }
 
-                    if (_settings.Value.BatchDelay.HasValue)
+                    if (_settings.CurrentValue.BatchDelay.HasValue)
                     {
-                        await Task.Delay(_settings.Value.BatchDelay.Value, stoppingToken);
+                        await Task.Delay(_settings.CurrentValue.BatchDelay.Value, stoppingToken);
                     }
                 }
                 catch (Exception ex)
