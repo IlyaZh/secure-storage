@@ -1,4 +1,4 @@
-const CACHE_NAME = 'secure-storage-cache-v1.0.6';
+const CACHE_NAME = 'secure-storage-cache-v1.0.7';
 const ASSETS = [
   './',
   './index.html',
@@ -49,8 +49,35 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch Event (Cache-first for static assets)
+// Fetch Event
 self.addEventListener('fetch', (event) => {
+  // Handle Web Share Target POST request
+  if (event.request.method === 'POST' && event.request.url.includes('/share-target')) {
+    event.respondWith(
+      (async () => {
+        try {
+          const formData = await event.request.formData();
+          const title = formData.get('title') || '';
+          const text = formData.get('text') || '';
+          const url = formData.get('url') || '';
+          const file = formData.get('file');
+
+          await setSharedData({
+            title,
+            text,
+            url,
+            file: file instanceof File ? file : null
+          });
+        } catch (err) {
+          console.error('[Service Worker] Failed to store shared target data:', err);
+        }
+        // Redirect to homepage with query param to trigger routing/auth check
+        return Response.redirect('./?shared=1', 303);
+      })()
+    );
+    return;
+  }
+
   // Skip API, non-GET, and non-HTTP/HTTPS requests
   if (
     event.request.method !== 'GET' ||
@@ -85,3 +112,33 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 });
+
+// Helper for IndexedDB storage of shared target payloads
+const DB_NAME = 'ShareTargetDB';
+const STORE_NAME = 'shared_store';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    request.onsuccess = (event) => resolve(event.target.result);
+    request.onerror = (event) => reject(event.target.error);
+  });
+}
+
+function setSharedData(data) {
+  return openDB().then((db) => {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.put(data, 'shared-data');
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  });
+}

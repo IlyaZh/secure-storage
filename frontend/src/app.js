@@ -45,8 +45,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Check session first
   await checkAuth();
+
+  // Handle shared query parameter and routing
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('shared')) {
+    const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.hash;
+    window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+  }
+
+  try {
+    const sharedData = await getSharedData();
+    if (sharedData) {
+      const targetHash = state.currentUser.isAuthenticated ? '#/create' : '#/login';
+      if (window.location.hash !== targetHash) {
+        window.location.hash = targetHash;
+        setupServiceWorker();
+        return;
+      }
+    }
+  } catch (err) {
+    console.error("Error checking shared data:", err);
+  }
+
   handleRoute();
-  
+  setupServiceWorker();
+});
+
+function setupServiceWorker() {
   // Register Service Worker & update handler
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
@@ -68,7 +93,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       })
       .catch(err => console.error("ServiceWorker registration failed", err));
   }
-});
+}
 
 function showUpdateBanner(registration) {
   // Check if banner already exists
@@ -94,5 +119,35 @@ function showUpdateBanner(registration) {
   // Reload page once new service worker becomes active
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     window.location.reload();
+  });
+}
+
+// Helper for IndexedDB storage of shared target payloads
+const DB_NAME = 'ShareTargetDB';
+const STORE_NAME = 'shared_store';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    request.onsuccess = (event) => resolve(event.target.result);
+    request.onerror = (event) => reject(event.target.error);
+  });
+}
+
+function getSharedData() {
+  return openDB().then((db) => {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.get('shared-data');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
   });
 }
