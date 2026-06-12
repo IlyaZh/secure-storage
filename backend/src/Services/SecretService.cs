@@ -95,13 +95,13 @@ public class SecretService(AppDbContext _dbContext, ILogger<SecretService> _logg
     /// 
     /// Arguments:
     /// - secretId: The ID of the secret to get
-    /// - ownerId: The ID of the user who owns the secret
+    /// - currentUserId: The ID of the user who wants to get the secret
     /// 
     /// Returns:
     /// - The secret if found
     /// 
     /// </summary>
-    public async Task<SecretDto?> GetSecretAsync(Guid secretId, CancellationToken ct)
+    public async Task<SecretDto?> GetSecretAsync(Guid secretId, Guid? currentUserId, CancellationToken ct)
     {
         var secret = await _dbContext.Secrets.FirstOrDefaultAsync(s => s.Id == secretId
                                                                        && s.ExpiresAt.CompareTo(DateTime.UtcNow) > 0
@@ -115,7 +115,8 @@ public class SecretService(AppDbContext _dbContext, ILogger<SecretService> _logg
         var filePath = Path.Combine(storagePath, secretId.ToString());
         var buffer = await File.ReadAllBytesAsync(filePath, ct);
 
-        if (secret.IsOneTime)
+        // Burn one-time secret ONLY if the accessor is NOT the owner
+        if (secret.IsOneTime && secret.OwnerId != currentUserId)
         {
             await BurnSecretAsync(secret.Id, secret.OwnerId, ct);
         }

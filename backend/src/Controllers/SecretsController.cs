@@ -80,7 +80,14 @@ public class SecretsController(
     [AllowAnonymous]
     public async Task<IActionResult> GetSecret(Guid secretId, CancellationToken ct)
     {
-        var secret = await _secretService.GetSecretAsync(secretId, ct);
+        Guid? currentUserId = null;
+        var userIdStr = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!string.IsNullOrEmpty(userIdStr) && Guid.TryParse(userIdStr, out var parsedUserId))
+        {
+            currentUserId = parsedUserId;
+        }
+
+        var secret = await _secretService.GetSecretAsync(secretId, currentUserId, ct);
         if (secret == null)
         {
             return NotFound();

@@ -102,6 +102,7 @@ export const en = {
     emptyText: "Please enter secret text.",
     encrypting: "Encrypting...",
     createSuccess: "Secret encrypted and saved successfully! 🎈",
+    createSuccessAndCopied: "Secret saved and copied to clipboard! 🎈",
     createError: "Failed to create secret.",
     sizeLimitError: "Maximum file size limit exceeded (15 MB).",
     deleteSuccess: "Secret successfully destroyed! 🎈",

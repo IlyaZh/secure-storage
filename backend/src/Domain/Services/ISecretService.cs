@@ -40,7 +40,7 @@ public interface ISecretService
     /// - The secret if found
     /// 
     /// </summary>
-    Task<SecretDto?> GetSecretAsync(Guid secretId, CancellationToken ct);
+    Task<SecretDto?> GetSecretAsync(Guid secretId, Guid? currentUserId, CancellationToken ct);
 
     /// <summary>
     /// Get all secrets for a user

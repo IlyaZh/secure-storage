@@ -4,12 +4,16 @@ import { encryptData, arrayBufferToBase64, bufToHex } from '../utils/crypto.js';
 import { apiFetch, state } from '../api.js';
 import { navigate } from '../router.js';
 
+let sharedFileObject = null;
+
 export function renderCreateSecret() {
   if (!state.currentUser.isAuthenticated) {
     showToast(t('toast.authWarning'), "warning");
     navigate('/login');
     return;
   }
+
+  sharedFileObject = null;
 
   const appContainer = document.getElementById('app');
   appContainer.innerHTML = `
@@ -85,11 +89,15 @@ export function renderCreateSecret() {
   fileInput.onchange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      sharedFileObject = null;
       document.getElementById('file-name-text').innerText = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
     }
   };
 
   document.getElementById('submit-secret-btn').onclick = submitSecret;
+
+  // Check and load shared payload if present
+  loadSharedDataFromDB();
 }
 
 async function submitSecret() {
@@ -109,7 +117,7 @@ async function submitSecret() {
 
   if (isFile) {
     const fileInput = document.getElementById('secret-file');
-    const file = fileInput.files[0];
+    const file = sharedFileObject || fileInput.files[0];
     if (!file) {
       showToast(t('toast.chooseFile'), "warning");
       return;
@@ -161,7 +169,13 @@ async function submitSecret() {
     document.getElementById('result-link-text').innerText = secretLink;
     document.getElementById('result-link-area').style.display = 'block';
     
-    showToast(t('toast.createSuccess'), "success");
+    // Auto-copy link to clipboard upon creation
+    try {
+      await navigator.clipboard.writeText(secretLink);
+      showToast(t('toast.createSuccessAndCopied') || "Секрет создан и скопирован!", "success");
+    } catch (err) {
+      showToast(t('toast.createSuccess') || "Секрет создан!", "success");
+    }
     
     document.getElementById('copy-result-link-btn').onclick = () => {
       navigator.clipboard.writeText(secretLink);
@@ -179,5 +193,91 @@ async function submitSecret() {
     } else {
       showToast(t('toast.createError'), "error");
     }
+  }
+}
+
+// Helper for IndexedDB storage of shared target payloads
+const DB_NAME = 'ShareTargetDB';
+const STORE_NAME = 'shared_store';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    request.onsuccess = (event) => resolve(event.target.result);
+    request.onerror = (event) => reject(event.target.error);
+  });
+}
+
+function getSharedData() {
+  return openDB().then((db) => {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.get('shared-data');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  });
+}
+
+function deleteSharedData() {
+  return openDB().then((db) => {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.delete('shared-data');
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  });
+}
+
+async function loadSharedDataFromDB() {
+  try {
+    const sharedData = await getSharedData();
+    if (!sharedData) return;
+
+    const fileCheckbox = document.getElementById('is-file-checkbox');
+    const commentInput = document.getElementById('secret-comment');
+    const textInput = document.getElementById('secret-text');
+
+    if (sharedData.title) {
+      commentInput.value = sharedData.title;
+    } else if (sharedData.file) {
+      commentInput.value = sharedData.file.name;
+    } else {
+      commentInput.value = "Shared secret";
+    }
+
+    if (sharedData.file) {
+      fileCheckbox.checked = true;
+      document.getElementById('text-input-group').style.display = 'none';
+      document.getElementById('file-input-group').style.display = 'block';
+
+      sharedFileObject = sharedData.file;
+      document.getElementById('file-name-text').innerText = `${sharedFileObject.name} (${(sharedFileObject.size / 1024).toFixed(1)} KB)`;
+    } else {
+      fileCheckbox.checked = false;
+      document.getElementById('text-input-group').style.display = 'block';
+      document.getElementById('file-input-group').style.display = 'none';
+
+      let sharedText = '';
+      if (sharedData.text && sharedData.url) {
+        sharedText = `${sharedData.text}\n\n${sharedData.url}`;
+      } else {
+        sharedText = sharedData.text || sharedData.url || '';
+      }
+      textInput.value = sharedText;
+    }
+
+    await deleteSharedData();
+  } catch (err) {
+    console.error("Failed to load shared data:", err);
   }
 }
