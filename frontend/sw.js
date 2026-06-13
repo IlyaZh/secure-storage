@@ -1,4 +1,4 @@
-const CACHE_NAME = 'secure-storage-cache-v1.0.7';
+const CACHE_NAME = 'secure-storage-cache-v1.0.8';
 const ASSETS = [
   './',
   './index.html',
@@ -71,8 +71,8 @@ self.addEventListener('fetch', (event) => {
         } catch (err) {
           console.error('[Service Worker] Failed to store shared target data:', err);
         }
-        // Redirect to homepage with query param to trigger routing/auth check
-        return Response.redirect('./?shared=1', 303);
+        // Redirect directly to the secret creation page
+        return Response.redirect('./#/create', 303);
       })()
     );
     return;
