@@ -22,11 +22,11 @@ public class DiagnosticsTests
         var result = controller.GetMetrics();
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.NotNull(okResult.Value);
-        
-        var totalRequestsProp = okResult.Value.GetType().GetProperty("totalRequests");
-        Assert.Equal(0L, totalRequestsProp!.GetValue(okResult.Value));
+        var contentResult = Assert.IsType<ContentResult>(result);
+        Assert.Equal("text/plain; version=0.0.4; charset=utf-8", contentResult.ContentType);
+        Assert.NotNull(contentResult.Content);
+        Assert.Contains("secure_storage_uptime_seconds", contentResult.Content);
+        Assert.Contains("secure_storage_memory_usage_bytes", contentResult.Content);
     }
 
     [Fact]
@@ -48,27 +48,14 @@ public class DiagnosticsTests
         var result = controller.GetMetrics();
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var data = okResult.Value;
-        Assert.NotNull(data);
-
-        var totalRequestsProp = data.GetType().GetProperty("totalRequests");
-        Assert.Equal(4L, totalRequestsProp!.GetValue(data));
-
-        var routesProp = data.GetType().GetProperty("routes");
-        var routes = (System.Collections.IEnumerable)routesProp!.GetValue(data)!;
-        var routesList = routes.Cast<object>().ToList();
+        var contentResult = Assert.IsType<ContentResult>(result);
+        Assert.Equal("text/plain; version=0.0.4; charset=utf-8", contentResult.ContentType);
+        Assert.NotNull(contentResult.Content);
         
-        Assert.Equal(2, routesList.Count);
-
-        var secretsRoute = routesList.FirstOrDefault(r => 
-            (string)r.GetType().GetProperty("route")!.GetValue(r)! == "/api/secrets/{id}" &&
-            (string)r.GetType().GetProperty("method")!.GetValue(r)! == "GET");
-        Assert.NotNull(secretsRoute);
-
-        Assert.Equal(3L, secretsRoute.GetType().GetProperty("totalRequests")!.GetValue(secretsRoute));
-        Assert.Equal(80L, secretsRoute.GetType().GetProperty("minDurationMs")!.GetValue(secretsRoute));
-        Assert.Equal(150L, secretsRoute.GetType().GetProperty("maxDurationMs")!.GetValue(secretsRoute));
-        Assert.Equal(116.67, secretsRoute.GetType().GetProperty("averageDurationMs")!.GetValue(secretsRoute));
+        Assert.Contains("secure_storage_http_requests_total{method=\"GET\",route=\"/api/secrets/{id}\",status=\"200\"} 2", contentResult.Content);
+        Assert.Contains("secure_storage_http_requests_total{method=\"GET\",route=\"/api/secrets/{id}\",status=\"404\"} 1", contentResult.Content);
+        Assert.Contains("secure_storage_http_requests_total{method=\"POST\",route=\"/api/invites\",status=\"201\"} 1", contentResult.Content);
+        Assert.Contains("secure_storage_http_request_duration_ms_sum{method=\"GET\",route=\"/api/secrets/{id}\"} 350", contentResult.Content);
+        Assert.Contains("secure_storage_http_request_duration_ms_count{method=\"GET\",route=\"/api/secrets/{id}\"} 3", contentResult.Content);
     }
 }
