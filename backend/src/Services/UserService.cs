@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SecureStorage.Data;
 using SecureStorage.Domain.Entities;
 using SecureStorage.Domain.Enums;
@@ -9,10 +10,10 @@ namespace SecureStorage.Domain.Services;
 /// Service for managing users
 /// </summary>
 public class UserService(
-    AppDbContext _dbContext
+    AppDbContext _dbContext,
+    IOptionsSnapshot<AppSettings> _appSettings
 ) : IUserService
 {
-    private const long QuotaBytes = 200L * 1024 * 1024;
     /// <summary>
     /// Get user by email
     /// 
@@ -99,6 +100,14 @@ public class UserService(
         invite.UsedAt = DateTime.UtcNow;
 
         var newUser = new User { Id = Guid.CreateVersion7(), Email = normalizedEmail, CreatedAt = DateTime.UtcNow };
+        newUser.Quota = new UserQuota
+        {
+            UserId = newUser.Id,
+            Quota = _appSettings.Value.QuotaBytes,
+            UsedQuota = 0,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
 
         _dbContext.Users.Add(newUser);
         await _dbContext.SaveChangesAsync(ct);
@@ -111,13 +120,13 @@ public class UserService(
     /// </summary>
     public async Task<UserStorageUsageDto> GetStorageUsageAsync(Guid userId, CancellationToken ct)
     {
-        var query = _dbContext.Secrets
-            .Where(s => s.OwnerId == userId && !s.IsBurned && s.ExpiresAt > DateTime.UtcNow);
+        var userQuota = await _dbContext.UserQuota.FirstOrDefaultAsync(q => q.UserId == userId, ct);
+        
+        var usedBytes = userQuota?.UsedQuota ?? 0L;
+        var quotaBytes = userQuota != null && userQuota.Quota > 0
+            ? userQuota.Quota
+            : _appSettings.Value.QuotaBytes;
 
-        var usedBytes = await query.AnyAsync(ct)
-            ? await query.SumAsync(s => s.Size, ct)
-            : 0L;
-
-        return new UserStorageUsageDto(usedBytes, QuotaBytes);
+        return new UserStorageUsageDto(usedBytes, quotaBytes);
     }
 }

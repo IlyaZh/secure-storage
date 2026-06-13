@@ -28,6 +28,7 @@ public interface ISecretService
                                  byte[] iv,
                                  string contentType,
                                  string? fileName,
+                                 long remainingQuotaBytes,
                                  CancellationToken ct);
 
     /// <summary>
