@@ -16,3 +16,10 @@ export function formatBytes(bytes, decimals = 2) {
 
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
+
+export function formatDateTime(dateInput) {
+  if (!dateInput) return '';
+  const date = new Date(dateInput);
+  return isNaN(date.getTime()) ? dateInput.toString() : date.toLocaleString();
+}
+
