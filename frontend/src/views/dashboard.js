@@ -2,7 +2,7 @@ import { t } from '../locales/i18n.js';
 import { showToast } from '../utils/toast.js';
 import { apiFetch, state, checkAuth } from '../api.js';
 import { navigate } from '../router.js';
-import { formatBytes } from '../utils/format.js';
+import { formatBytes, formatDateTime } from '../utils/format.js';
 
 export async function renderDashboard() {
   try {
@@ -236,7 +236,7 @@ async function loadUserInvites(lastInviteId = null) {
     }
 
     invites.forEach(inv => {
-      const dateStr = new Date(inv.createdAt).toLocaleString();
+      const dateStr = formatDateTime(inv.createdAt);
       const statusText = inv.isUsed ? t('dashboard.inviteStatusUsed') : t('dashboard.inviteStatusActive');
       const row = document.createElement('tr');
       row.id = `invite-item-${inv.id}`;
@@ -335,7 +335,7 @@ async function loadUserSecrets(lastSecretId = null) {
 
     secrets.forEach(s => {
       const secretId = s.id || s.Id;
-      const dateStr = new Date(s.createdAt).toLocaleString();
+      const dateStr = formatDateTime(s.createdAt);
       const lowerId = secretId.toLowerCase();
       const upperId = secretId.toUpperCase();
       const localKey = localStorage.getItem(`secret-key-${lowerId}`) || 

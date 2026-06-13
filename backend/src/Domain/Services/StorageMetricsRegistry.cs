@@ -6,6 +6,7 @@ public class StorageMetrics
     public long TotalUsedBytes { get; set; } = 0;
     public long ConfigQuotaBytes { get; set; } = 0;
     public int UserCount { get; set; } = 0;
+    public int ActiveSecretsCount { get; set; } = 0;
     public double AverageUsedBytes { get; set; } = 0;
     public double P50 { get; set; } = 0;
     public double P90 { get; set; } = 0;

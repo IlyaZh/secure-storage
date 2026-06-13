@@ -511,7 +511,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
+        "w": 4,
         "x": 0,
         "y": 24
       },
@@ -565,6 +565,71 @@
             "mode": "absolute",
             "steps": [
               {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 24
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "title": "Active Secrets",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "secure_storage_active_secrets_count",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
                 "color": "green",
                 "value": null
               }
@@ -576,8 +641,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 6,
+        "w": 4,
+        "x": 8,
         "y": 24
       },
       "id": 9,

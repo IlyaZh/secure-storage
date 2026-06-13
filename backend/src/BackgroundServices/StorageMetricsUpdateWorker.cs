@@ -57,6 +57,10 @@ public class StorageMetricsUpdateWorker(
             long totalUsedBytes = userQuotas.Count > 0 ? userQuotas.Sum(q => q.UsedQuota) : 0;
             long configQuotaBytes = appSettings.Value.QuotaBytes;
 
+            var now = DateTime.UtcNow;
+            var activeSecretsCount = await dbContext.Secrets
+                .CountAsync(s => !s.IsBurned && s.ExpiresAt > now, ct);
+
             var freeQuotaPercentages = userQuotas
                 .Select(q => q.Quota > 0 ? ((q.Quota - q.UsedQuota) * 100.0 / q.Quota) : 0.0)
                 .OrderBy(p => p)
@@ -68,6 +72,7 @@ public class StorageMetricsUpdateWorker(
                 TotalUsedBytes = totalUsedBytes,
                 ConfigQuotaBytes = configQuotaBytes,
                 UserCount = userQuotas.Count,
+                ActiveSecretsCount = activeSecretsCount,
                 AverageUsedBytes = userQuotas.Count > 0 ? Math.Round(userQuotas.Average(q => q.UsedQuota), 2) : 0.0,
                 P50 = GetPercentile(freeQuotaPercentages, 50),
                 P90 = GetPercentile(freeQuotaPercentages, 90),
