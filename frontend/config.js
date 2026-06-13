@@ -1,3 +1,3 @@
 window.ENV = {
-  API_URL: 'http://localhost:5001'
+  API_URL: 'https://api.shareit.zoidberg.cc'
 };
