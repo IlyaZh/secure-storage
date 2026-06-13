@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using SecureStorage.Data;
 using SecureStorage.Domain.Entities;
 using SecureStorage.Domain.Services;
@@ -14,6 +15,19 @@ namespace SecureStorage.Tests;
 
 public class SecretServiceTests : IDisposable
 {
+    private class MockOptionsSnapshot<T>(T value) : IOptionsSnapshot<T> where T : class
+    {
+        public T Value => value;
+        public T Get(string? name) => value;
+    }
+
+    private IOptionsSnapshot<AppSettings> CreateMockSettings(long quotaBytes = 209715200)
+    {
+        return new MockOptionsSnapshot<AppSettings>(new AppSettings
+        {
+            QuotaBytes = quotaBytes
+        });
+    }
     private readonly string _storagePath;
 
     public SecretServiceTests()
@@ -54,7 +68,7 @@ public class SecretServiceTests : IDisposable
         await context.SaveChangesAsync();
 
         var logger = NullLogger<SecretService>.Instance;
-        var service = new SecretService(context, logger);
+        var service = new SecretService(context, logger, CreateMockSettings());
 
         var content = "Secret Content 123";
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
@@ -69,6 +83,7 @@ public class SecretServiceTests : IDisposable
             iv,
             contentType: "text/plain",
             fileName: "secret.txt",
+            remainingQuotaBytes: 209715200, // 200MB
             CancellationToken.None
         );
 
@@ -83,6 +98,10 @@ public class SecretServiceTests : IDisposable
         Assert.Equal("secret.txt", secret.FileName);
         Assert.Equal(content.Length, secret.Size);
 
+        var quota = await context.UserQuota.FirstOrDefaultAsync(q => q.UserId == ownerId);
+        Assert.NotNull(quota);
+        Assert.Equal(content.Length, quota.UsedQuota);
+
         var savedFilePath = Path.Combine(_storagePath, secretId.ToString());
         Assert.True(File.Exists(savedFilePath));
         var savedContent = await File.ReadAllTextAsync(savedFilePath);
@@ -95,7 +114,7 @@ public class SecretServiceTests : IDisposable
         // Arrange
         using var context = CreateInMemoryDbContext();
         var logger = NullLogger<SecretService>.Instance;
-        var service = new SecretService(context, logger);
+        var service = new SecretService(context, logger, CreateMockSettings());
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes("Data"));
         var iv = new byte[12];
@@ -110,8 +129,44 @@ public class SecretServiceTests : IDisposable
                 iv,
                 contentType: "text/plain",
                 fileName: null,
+                remainingQuotaBytes: 209715200, // 200MB
                 CancellationToken.None
             ));
+    }
+
+    [Fact]
+    public async Task CreateSecretAsync_ShouldThrowException_WhenQuotaExceeded()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var ownerId = Guid.NewGuid();
+        var user = new User { Id = ownerId, Email = "owner@example.com", CreatedAt = DateTime.UtcNow };
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+
+        var logger = NullLogger<SecretService>.Instance;
+        var service = new SecretService(context, logger, CreateMockSettings());
+
+        var content = "Secret Content 123";
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
+        var iv = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+
+        // Act & Assert
+        // We set remaining quota to 5 bytes, but our content is 18 bytes.
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.CreateSecretAsync(
+                stream,
+                ownerId,
+                "Comment",
+                isOneTime: false,
+                iv,
+                contentType: "text/plain",
+                fileName: "test.txt",
+                remainingQuotaBytes: 5,
+                CancellationToken.None
+            ));
+
+        Assert.Equal("Storage quota exceeded.", exception.Message);
     }
 
     [Fact]
@@ -147,7 +202,7 @@ public class SecretServiceTests : IDisposable
         await File.WriteAllTextAsync(Path.Combine(folder, secretId.ToString()), "Test");
 
         var logger = NullLogger<SecretService>.Instance;
-        var service = new SecretService(context, logger);
+        var service = new SecretService(context, logger, CreateMockSettings());
 
         // Act
         var result = await service.GetSecretAsync(secretId, null, CancellationToken.None);
@@ -210,7 +265,7 @@ public class SecretServiceTests : IDisposable
         await context.SaveChangesAsync();
 
         var logger = NullLogger<SecretService>.Instance;
-        var service = new SecretService(context, logger);
+        var service = new SecretService(context, logger, CreateMockSettings());
 
         // Act & Assert
         Assert.Null(await service.GetSecretAsync(expiredSecretId, null, CancellationToken.None));
@@ -237,15 +292,24 @@ public class SecretServiceTests : IDisposable
             ContentType = "text/plain",
             FileName = "test.txt",
             IV = new byte[0],
-            Size = 0,
+            Size = 100,
             CreatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddHours(1)
         };
         context.Secrets.Add(secret);
+
+        context.UserQuota.Add(new UserQuota
+        {
+            UserId = ownerId,
+            Quota = 200L * 1024 * 1024,
+            UsedQuota = 100,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        });
         await context.SaveChangesAsync();
 
         var logger = NullLogger<SecretService>.Instance;
-        var service = new SecretService(context, logger);
+        var service = new SecretService(context, logger, CreateMockSettings());
 
         // Act
         await service.BurnSecretAsync(secretId, ownerId, CancellationToken.None);
@@ -255,6 +319,10 @@ public class SecretServiceTests : IDisposable
         Assert.NotNull(updatedSecret);
         Assert.True(updatedSecret.IsBurned);
         Assert.True(updatedSecret.ExpiresAt <= DateTime.UtcNow);
+
+        var quota = await context.UserQuota.FirstOrDefaultAsync(q => q.UserId == ownerId);
+        Assert.NotNull(quota);
+        Assert.Equal(0, quota.UsedQuota);
     }
 
     [Fact]
@@ -277,7 +345,7 @@ public class SecretServiceTests : IDisposable
             ContentType = "text/plain",
             FileName = "test.txt",
             IV = new byte[0],
-            Size = 0,
+            Size = 10,
             CreatedAt = DateTime.UtcNow.AddHours(-10),
             ExpiresAt = DateTime.UtcNow.AddHours(-1) // Expired
         };
@@ -293,13 +361,22 @@ public class SecretServiceTests : IDisposable
             ContentType = "text/plain",
             FileName = "test.txt",
             IV = new byte[0],
-            Size = 0,
+            Size = 20,
             CreatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddHours(1) // Active
         };
 
         context.Secrets.Add(expiredSecret1);
         context.Secrets.Add(activeSecret);
+
+        context.UserQuota.Add(new UserQuota
+        {
+            UserId = ownerId,
+            Quota = 200L * 1024 * 1024,
+            UsedQuota = 30,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        });
         await context.SaveChangesAsync();
 
         // Write files to disk
@@ -310,7 +387,7 @@ public class SecretServiceTests : IDisposable
         await File.WriteAllTextAsync(activeFile, "Active content");
 
         var logger = NullLogger<SecretService>.Instance;
-        var service = new SecretService(context, logger);
+        var service = new SecretService(context, logger, CreateMockSettings());
 
         // Act
         var deletedCount = await service.CleanupExpiredSecretsBatchAsync(10, CancellationToken.None);
@@ -322,6 +399,10 @@ public class SecretServiceTests : IDisposable
 
         Assert.Null(await context.Secrets.FindAsync(expiredSecretId1));
         Assert.NotNull(await context.Secrets.FindAsync(activeSecretId));
+
+        var quota = await context.UserQuota.FirstOrDefaultAsync(q => q.UserId == ownerId);
+        Assert.NotNull(quota);
+        Assert.Equal(20, quota.UsedQuota);
     }
 
     [Fact]
@@ -356,7 +437,7 @@ public class SecretServiceTests : IDisposable
         await File.WriteAllTextAsync(Path.Combine(folder, secretId.ToString()), "TestData");
 
         var logger = NullLogger<SecretService>.Instance;
-        var service = new SecretService(context, logger);
+        var service = new SecretService(context, logger, CreateMockSettings());
 
         // Act - accessed by OWNER
         var result = await service.GetSecretAsync(secretId, ownerId, CancellationToken.None);
@@ -403,7 +484,7 @@ public class SecretServiceTests : IDisposable
         await File.WriteAllTextAsync(Path.Combine(folder, secretId.ToString()), "TestData");
 
         var logger = NullLogger<SecretService>.Instance;
-        var service = new SecretService(context, logger);
+        var service = new SecretService(context, logger, CreateMockSettings());
 
         // Act - accessed by stranger (another user id)
         var result = await service.GetSecretAsync(secretId, strangerId, CancellationToken.None);

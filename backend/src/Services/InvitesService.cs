@@ -8,7 +8,7 @@ namespace SecureStorage.Domain.Services;
 
 public class InvitesService(
     AppDbContext _dbContext,
-    IOptions<InvitesCleanupWorkerSettings> _settings
+    IOptionsSnapshot<InvitesCleanupWorkerSettings> _settings
 ) : IInvitesService
 {
     public async Task<Invite> CreateInviteAsync(Guid issuedByUserId, string email, CancellationToken ct)

@@ -16,6 +16,11 @@ public class User
     public string Email { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the quota of the user.
+    /// </summary>
+    public UserQuota Quota { get; set; } = null!;
+
+    /// <summary>
     /// Gets or sets the date and time when the user was created.
     /// </summary>
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;

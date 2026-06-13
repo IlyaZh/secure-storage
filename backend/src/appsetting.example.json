@@ -9,7 +9,8 @@
   "AppSettings": {
     "FrontendUrl": "http://localhost:3005",
     "CookieDomain": "",
-    "MaxSecretSizeBytes": 15728640
+    "MaxSecretSizeBytes": 15728640,
+    "QuotaBytes": 209715200
   },
   "ConnectionStrings": {
     "Database": "Server=localhost;Port=3306;Database=secure_storage;Uid=root;Pwd=YOUR_DB_PASSWORD;"
@@ -30,6 +31,9 @@
     "PeriodSeconds": 900,
     "BatchSize": 1000,
     "BatchDelayMilliseconds": 1000
+  },
+  "StorageMetricsUpdateWorker": {
+    "PeriodSeconds": 60
   },
   "InvitesCleanupWorker": {
     "PeriodSeconds": 900,

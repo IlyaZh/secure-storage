@@ -22,9 +22,15 @@ public class InvitesServiceTests
         return new AppDbContext(options);
     }
 
-    private IOptions<InvitesCleanupWorkerSettings> CreateMockSettings(int ttlHours)
+    private class MockOptionsSnapshot<T>(T value) : IOptionsSnapshot<T> where T : class
     {
-        return Options.Create(new InvitesCleanupWorkerSettings
+        public T Value => value;
+        public T Get(string? name) => value;
+    }
+
+    private IOptionsSnapshot<InvitesCleanupWorkerSettings> CreateMockSettings(int ttlHours)
+    {
+        return new MockOptionsSnapshot<InvitesCleanupWorkerSettings>(new InvitesCleanupWorkerSettings
         {
             TTLh = ttlHours
         });

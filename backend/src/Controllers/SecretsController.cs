@@ -13,7 +13,8 @@ namespace SecureStorage.Controllers;
 [Route("api/secrets")]
 public class SecretsController(
     ISecretService _secretService,
-    IOptions<AppSettings> _appSettings
+    IUserService _userService,
+    IOptionsSnapshot<AppSettings> _appSettings
 ) : ControllerBase
 {
     [HttpPost]
@@ -26,6 +27,14 @@ public class SecretsController(
         {
             Console.WriteLine("[SecretsController] CreateSecret: userIdStr is empty or not a valid Guid");
             return Unauthorized();
+        }
+
+        var usage = await _userService.GetStorageUsageAsync(userId, ct);
+        var remainingQuotaBytes = usage.QuotaBytes - usage.UsedBytes;
+
+        if (Request.ContentLength.HasValue && Request.ContentLength.Value > remainingQuotaBytes)
+        {
+            return BadRequest("Secret size exceeds remaining storage quota.");
         }
 
         if (Request.ContentLength.HasValue && Request.ContentLength.Value > _appSettings.Value.MaxSecretSizeBytes)
@@ -69,11 +78,17 @@ public class SecretsController(
 
         var contentStream = Request.Body;
 
-        var secretId = await _secretService.CreateSecretAsync(
-            contentStream, userId, comment, isOneTime, iv, contentType, fileName, ct);
+        try
+        {
+            var secretId = await _secretService.CreateSecretAsync(
+                contentStream, userId, comment, isOneTime, iv, contentType, fileName, remainingQuotaBytes, ct);
 
-        return Ok(new { id = secretId });
-
+            return Ok(new { id = secretId });
+        }
+        catch (InvalidOperationException ex) when (ex.Message == "Storage quota exceeded.")
+        {
+            return BadRequest("Storage quota exceeded.");
+        }
     }
 
     [HttpGet("{secretId}")]

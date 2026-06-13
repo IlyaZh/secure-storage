@@ -6,6 +6,8 @@ using SecureStorage.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.ConfigureAppConfiguration();
+
 builder.ConfigureLogging();
 
 builder.Services.AddControllers();

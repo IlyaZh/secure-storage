@@ -23,7 +23,10 @@ public static class ServiceRegistrar
         builder.Services.AddScoped<ISecretService, SecretService>();
         builder.Services.AddScoped<IInvitesService, InvitesService>();
 
+        builder.Services.AddSingleton<StorageMetricsRegistry>();
+
         builder.Services.AddHostedService<SecretsCleanupWorker>();
         builder.Services.AddHostedService<InvitesCleanupWorker>();
+        builder.Services.AddHostedService<StorageMetricsUpdateWorker>();
     }
 }

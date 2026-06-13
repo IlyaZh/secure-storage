@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SecureStorage.Data;
 using SecureStorage.Domain.Entities;
 using SecureStorage.Domain.Enums;
@@ -21,6 +22,20 @@ public class UserServiceTests
         return new AppDbContext(options);
     }
 
+    private class MockOptionsSnapshot<T>(T value) : IOptionsSnapshot<T> where T : class
+    {
+        public T Value => value;
+        public T Get(string? name) => value;
+    }
+
+    private IOptionsSnapshot<AppSettings> CreateMockSettings(long quotaBytes = 209715200)
+    {
+        return new MockOptionsSnapshot<AppSettings>(new AppSettings
+        {
+            QuotaBytes = quotaBytes
+        });
+    }
+
     [Fact]
     public async Task GetByEmailAsync_ShouldReturnUser_WhenUserExists()
     {
@@ -31,7 +46,7 @@ public class UserServiceTests
         context.Users.Add(user);
         await context.SaveChangesAsync();
 
-        var service = new UserService(context);
+        var service = new UserService(context, CreateMockSettings());
 
         // Act
         var result = await service.GetByEmailAsync("  TEST@example.com  ", CancellationToken.None);
@@ -46,7 +61,7 @@ public class UserServiceTests
     {
         // Arrange
         using var context = CreateInMemoryDbContext();
-        var service = new UserService(context);
+        var service = new UserService(context, CreateMockSettings());
 
         // Act
         var result = await service.GetByEmailAsync("nonexistent@example.com", CancellationToken.None);
@@ -73,7 +88,7 @@ public class UserServiceTests
         context.Invites.Add(invite);
         await context.SaveChangesAsync();
 
-        var service = new UserService(context);
+        var service = new UserService(context, CreateMockSettings());
 
         // Act
         var result = await service.RegisterWithInviteAsync(email, inviteId, CancellationToken.None);
@@ -94,7 +109,7 @@ public class UserServiceTests
     {
         // Arrange
         using var context = CreateInMemoryDbContext();
-        var service = new UserService(context);
+        var service = new UserService(context, CreateMockSettings());
 
         // Act
         var result = await service.RegisterWithInviteAsync("user@example.com", Guid.NewGuid(), CancellationToken.None);
@@ -120,7 +135,7 @@ public class UserServiceTests
         context.Invites.Add(invite);
         await context.SaveChangesAsync();
 
-        var service = new UserService(context);
+        var service = new UserService(context, CreateMockSettings());
 
         // Act
         var result = await service.RegisterWithInviteAsync("wrongemail@example.com", inviteId, CancellationToken.None);
@@ -150,7 +165,7 @@ public class UserServiceTests
         context.Invites.Add(invite);
         await context.SaveChangesAsync();
 
-        var service = new UserService(context);
+        var service = new UserService(context, CreateMockSettings());
 
         // Act
         var result = await service.RegisterWithInviteAsync(email, inviteId, CancellationToken.None);
@@ -168,6 +183,15 @@ public class UserServiceTests
         var userId = Guid.NewGuid();
         var user = new User { Id = userId, Email = "test@example.com", CreatedAt = DateTime.UtcNow };
         context.Users.Add(user);
+        
+        context.UserQuota.Add(new UserQuota
+        {
+            UserId = userId,
+            Quota = 200L * 1024 * 1024,
+            UsedQuota = 500L,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        });
 
         // Active secret
         context.Secrets.Add(new Secret
@@ -213,7 +237,7 @@ public class UserServiceTests
 
         await context.SaveChangesAsync();
 
-        var service = new UserService(context);
+        var service = new UserService(context, CreateMockSettings());
 
         // Act
         var result = await service.GetStorageUsageAsync(userId, CancellationToken.None);

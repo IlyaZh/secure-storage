@@ -1,11 +1,8 @@
 using System;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using SecureStorage.Controllers;
-using SecureStorage.Data;
+using SecureStorage.Domain.Services;
 using SecureStorage.Middleware;
 using Xunit;
 
@@ -13,21 +10,13 @@ namespace SecureStorage.Tests;
 
 public class DiagnosticsTests
 {
-    private AppDbContext CreateInMemoryDbContext()
-    {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-
-        return new AppDbContext(options);
-    }
-
     [Fact]
     public void GetMetrics_ShouldReturnEmptyMetrics_AtStartup()
     {
         // Arrange
         var registry = new HttpMetricsRegistry();
-        var controller = new DiagnosticsController(registry);
+        var storageRegistry = new StorageMetricsRegistry();
+        var controller = new DiagnosticsController(registry, storageRegistry);
 
         // Act
         var result = controller.GetMetrics();
@@ -45,6 +34,7 @@ public class DiagnosticsTests
     {
         // Arrange
         var registry = new HttpMetricsRegistry();
+        var storageRegistry = new StorageMetricsRegistry();
         
         // Record some dummy requests
         registry.RecordRequest("GET", "/api/secrets/{id}", 120, 200);
@@ -52,7 +42,7 @@ public class DiagnosticsTests
         registry.RecordRequest("GET", "/api/secrets/{id}", 150, 404);
         registry.RecordRequest("POST", "/api/invites", 35, 201);
 
-        var controller = new DiagnosticsController(registry);
+        var controller = new DiagnosticsController(registry, storageRegistry);
 
         // Act
         var result = controller.GetMetrics();
