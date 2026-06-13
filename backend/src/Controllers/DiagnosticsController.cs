@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SecureStorage.Data;
+using SecureStorage.Domain.Services;
 using SecureStorage.Middleware;
 
 namespace SecureStorage.Controllers;
@@ -13,7 +13,8 @@ namespace SecureStorage.Controllers;
 [AllowAnonymous]
 [ApiController]
 public class DiagnosticsController(
-    HttpMetricsRegistry _metricsRegistry
+    HttpMetricsRegistry _metricsRegistry,
+    StorageMetricsRegistry _storageMetricsRegistry
 ) : ControllerBase
 {
 
@@ -39,6 +40,8 @@ public class DiagnosticsController(
         long memoryUsed = GC.GetTotalMemory(forceFullCollection: false);
         ThreadPool.GetAvailableThreads(out int workerThreads, out int iocpThreads);
 
+        var storageMetrics = _storageMetricsRegistry.Metrics;
+
         return Ok(new
         {
             uptimeSeconds = Math.Round(uptimeSeconds, 2),
@@ -49,6 +52,21 @@ public class DiagnosticsController(
             {
                 availableWorkerThreads = workerThreads,
                 availableCompletionPortThreads = iocpThreads
+            },
+            storageMetrics = new
+            {
+                totalQuotaBytes = storageMetrics.TotalQuotaBytes,
+                totalUsedBytes = storageMetrics.TotalUsedBytes,
+                configQuotaBytes = storageMetrics.ConfigQuotaBytes,
+                userCount = storageMetrics.UserCount,
+                averageUsedBytes = storageMetrics.AverageUsedBytes,
+                percentiles = new
+                {
+                    p50 = storageMetrics.P50,
+                    p90 = storageMetrics.P90,
+                    p95 = storageMetrics.P95,
+                    p99 = storageMetrics.P99
+                }
             },
             routes
         });

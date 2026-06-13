@@ -32,6 +32,9 @@
     "BatchSize": 1000,
     "BatchDelayMilliseconds": 1000
   },
+  "StorageMetricsUpdateWorker": {
+    "PeriodSeconds": 60
+  },
   "InvitesCleanupWorker": {
     "PeriodSeconds": 900,
     "BatchSize": 1000,
