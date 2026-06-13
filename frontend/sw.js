@@ -1,4 +1,4 @@
-const CACHE_NAME = 'secure-storage-cache-v1.0.8';
+const CACHE_NAME = 'secure-storage-cache-v1.0.9';
 const ASSETS = [
   './',
   './index.html',
