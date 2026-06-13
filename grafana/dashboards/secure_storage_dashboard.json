@@ -36,7 +36,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -88,7 +88,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "Prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "secure_storage_uptime_seconds",
@@ -101,7 +101,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -178,7 +178,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "Prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "secure_storage_memory_usage_bytes",
@@ -191,7 +191,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -268,7 +268,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "Prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "sum by (method, route) (rate(secure_storage_http_requests_total[5m]))",
@@ -281,7 +281,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -358,7 +358,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "Prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "sum by (method, route) (rate(secure_storage_http_request_duration_ms_sum[5m])) / sum by (method, route) (rate(secure_storage_http_request_duration_ms_count[5m]))",
@@ -371,7 +371,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -448,7 +448,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "Prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "secure_storage_threadpool_available_worker_threads",
@@ -459,7 +459,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "Prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "secure_storage_threadpool_available_iocp_threads",
@@ -484,7 +484,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -536,7 +536,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "Prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "secure_storage_user_count",
@@ -549,7 +549,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -601,7 +601,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "Prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "secure_storage_config_quota_bytes",
@@ -614,7 +614,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -666,7 +666,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "Prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "secure_storage_average_used_bytes",
@@ -679,7 +679,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -731,7 +731,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "Prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "secure_storage_total_used_bytes",
@@ -744,7 +744,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -821,7 +821,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "Prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "secure_storage_free_quota_percent",
@@ -834,7 +834,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "Prometheus"
+        "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
@@ -911,7 +911,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "Prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "secure_storage_total_quota_bytes",
@@ -922,7 +922,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "Prometheus"
+            "uid": "${datasource}"
           },
           "editorMode": "code",
           "expr": "secure_storage_total_used_bytes",
@@ -937,7 +937,22 @@
   "style": "dark",
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Prometheus Datasource",
+        "multi": false,
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      }
+    ]
   },
   "time": {
     "from": "now-1h",
@@ -945,7 +960,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Secure Storage Dashboard",
-  "uid": "secure_storage_dashboard",
+  "title": "Share it!",
+  "uid": "share_it_dashboard",
   "version": 1
 }
