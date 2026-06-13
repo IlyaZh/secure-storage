@@ -57,6 +57,9 @@ public class DiagnosticsController(
         registry.Gauge("secure_storage_user_count", "Total number of registered users.")
             .AddValue(storageMetrics.UserCount);
 
+        registry.Gauge("secure_storage_active_secrets_count", "Total number of active (not burned, not expired) secrets.")
+            .AddValue(storageMetrics.ActiveSecretsCount);
+
         registry.Gauge("secure_storage_average_used_bytes", "Average storage consumed per user.")
             .AddValue(storageMetrics.AverageUsedBytes);
 
